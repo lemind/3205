@@ -1,5 +1,7 @@
 # 3205
 
+[Русский](README.ru.md)
+
 Async URL status checker — submit a list of URLs, the backend checks each with an HTTP `HEAD` request in the background (bounded concurrency, artificial delay), and the frontend tracks progress and results per URL. See [spec.md](specs/001-url-status-checker/spec.md) for the full functional spec.
 
 ## Tech Stack
