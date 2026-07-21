@@ -71,15 +71,15 @@ backend/
 │       ├── jobs.module.ts
 │       ├── jobs.controller.ts        # thin — parses request, calls JobsService, shapes response
 │       ├── jobs.service.ts           # owns the in-memory Map<jobId, Job>, state transitions
+│       ├── jobs.service.spec.ts      # colocated per Nest's default jest config (rootDir: "src")
 │       ├── url-checker.service.ts    # HEAD checks, per-job p-limit(5), artificial delay, cancellation check
+│       ├── url-checker.service.spec.ts
 │       ├── dto/
 │       │   └── create-job.dto.ts     # class-validator DTO for POST /api/jobs
 │       └── models/
 │           ├── job.ts                 # Job entity/type + status enum
 │           └── url-check-result.ts    # URL result entity/type + status enum
-└── test/
-    ├── jobs.service.spec.ts
-    ├── url-checker.service.spec.ts
+└── test/                              # e2e only — separate jest-e2e.json config, not scanned by `npm test`
     └── jobs.e2e-spec.ts
 
 frontend/

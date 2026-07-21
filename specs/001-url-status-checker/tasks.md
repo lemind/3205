@@ -57,18 +57,18 @@
 
 ### Tests
 
-- [ ] T017 [P] [US1] Unit test: `JobsService.createJob` assigns a unique `jobId`, sets status `pending`, and returns without waiting for URL checks, in `backend/test/jobs.service.spec.ts`
-- [ ] T018 [P] [US1] Unit test: `UrlCheckerService` never runs more than 5 concurrent `HEAD` checks for one job (mocked `fetch`), in `backend/test/url-checker.service.spec.ts`
+- [x] T017 [P] [US1] Unit test: `JobsService.createJob` assigns a unique `jobId`, sets status `pending`, and returns without waiting for URL checks, in `backend/src/jobs/jobs.service.spec.ts` — 3 tests (unique id, status pending at creation, non-blocking return via a deliberately-never-resolving mock)
+- [x] T018 [P] [US1] Unit test: `UrlCheckerService` never runs more than 5 concurrent `HEAD` checks for one job (mocked `fetch`), in `backend/src/jobs/url-checker.service.spec.ts` — 4 tests (concurrency cap with 12 URLs, pending-until-first-dispatch timing, 2xx/4xx classification, network-error classification); `Math.random()` pinned to 0 in tests so the 0–10s artificial delay doesn't slow the suite
 
 ### Implementation
 
-- [ ] T019 [US1] Implement `CreateJobDto` (`urls: string[]`, non-empty entries) with `class-validator` in `backend/src/jobs/dto/create-job.dto.ts`
-- [ ] T020 [US1] Implement `JobsController.createJob` (`POST /api/jobs`, `ValidationPipe`) in `backend/src/jobs/jobs.controller.ts` (depends: T019)
-- [ ] T021 [US1] Implement `JobsService.createJob` — build the `Job` + `UrlCheckResult[]`, store it, fire-and-forget `UrlCheckerService.processJob` — in `backend/src/jobs/jobs.service.ts` (depends: T013)
-- [ ] T022 [US1] Implement `UrlCheckerService.processJob` — per-job `p-limit(5)`, `fetch` HEAD, 0–10s delay, success/error classification per [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md) — in `backend/src/jobs/url-checker.service.ts`
-- [ ] T023 [US1] Implement `jobsApi.createJob` mutation in `frontend/src/entities/job/api.ts` (depends: T015)
-- [ ] T024 [US1] Implement the URL-list textarea form (`CreateJobForm`) in `frontend/src/features/create-job/`
-- [ ] T025 [US1] Wire `CreateJobForm` into `frontend/src/pages/jobs/`, setting the returned `jobId` as the active job on submit
+- [x] T019 [US1] Implement `CreateJobDto` (`urls: string[]`, non-empty entries) with `class-validator` in `backend/src/jobs/dto/create-job.dto.ts` — `strict: true` required a definite-assignment assertion (`urls!: string[]`) since DTOs are populated by Nest's pipeline, not a constructor
+- [x] T020 [US1] Implement `JobsController.createJob` (`POST /api/jobs`, `ValidationPipe`) in `backend/src/jobs/jobs.controller.ts` (depends: T019) — global `ValidationPipe` added in `main.ts`; verified live with curl that every invalid shape (missing/empty `urls`, non-string/empty entries) returns 400 and a valid one returns 201
+- [x] T021 [US1] Implement `JobsService.createJob` — build the `Job` + `UrlCheckResult[]`, store it, fire-and-forget `UrlCheckerService.processJob` — in `backend/src/jobs/jobs.service.ts` (depends: T013) — added a `Logger` call (job created) for the phase checkpoint's "verify via backend logs"
+- [x] T022 [US1] Implement `UrlCheckerService.processJob` — per-job `p-limit(5)`, `fetch` HEAD, 0–10s delay, success/error classification per [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md) — in `backend/src/jobs/url-checker.service.ts` — found and fixed a real bug: `job.status` was flipping to `in_progress` synchronously before `createJob()` even returned (fire-and-forget async functions run synchronously up to their first `await`); moved the flip inside the `p-limit` callback, which `p-limit`'s source confirms always dispatches via a microtask. Also downgraded `p-limit` 7→3.1.0 (7 is ESM-only, broke Jest module loading). HEAD timeout pinned at 5000ms (not specified by ADR-0004, a judgment call). Added `Logger` calls per the checkpoint.
+- [x] T023 [US1] Implement `jobsApi.createJob` mutation in `frontend/src/entities/job/api.ts` (depends: T015)
+- [x] T024 [US1] Implement the URL-list textarea form (`CreateJobForm`) in `frontend/src/features/create-job/` — client-side trims/filters blank lines before enabling submit
+- [x] T025 [US1] Wire `CreateJobForm` into `frontend/src/pages/jobs/`, setting the returned `jobId` as the active job on submit — added `JobsPage`, made `App.tsx` render it; the Phase 1 health-check card is retired from the UI (its job was proving the wiring, which it did — `/api/health` itself and the Docker healthcheck are unaffected). `activeJobId` is local `useState` for now, formalized into a slice in T033 (Phase 5) as originally planned.
 
 **Checkpoint**: Submitting a job works end-to-end and starts real background processing (verify via backend logs until US3 gives visibility).
 
@@ -82,7 +82,7 @@
 
 ### Tests
 
-- [ ] T026 [P] [US3] Unit test: `JobsService.getJob` returns per-URL detail and throws `NotFoundException` for an unknown id, in `backend/test/jobs.service.spec.ts`
+- [ ] T026 [P] [US3] Unit test: `JobsService.getJob` returns per-URL detail and throws `NotFoundException` for an unknown id, in `backend/src/jobs/jobs.service.spec.ts`
 
 ### Implementation
 
@@ -124,7 +124,7 @@
 
 ### Tests
 
-- [ ] T036 [P] [US2] Unit test: `JobsService.listJobs` returns correct `urlCount`/`successCount`/`errorCount` per job, in `backend/test/jobs.service.spec.ts`
+- [ ] T036 [P] [US2] Unit test: `JobsService.listJobs` returns correct `urlCount`/`successCount`/`errorCount` per job, in `backend/src/jobs/jobs.service.spec.ts`
 
 ### Implementation
 
@@ -146,7 +146,7 @@
 
 ### Tests
 
-- [ ] T042 [P] [US4] Unit test: cancelling marks unstarted URLs `cancelled`, leaves in-flight URLs to finish, and is a no-op on an already-terminal job, in `backend/test/jobs.service.spec.ts` and `backend/test/url-checker.service.spec.ts`
+- [ ] T042 [P] [US4] Unit test: cancelling marks unstarted URLs `cancelled`, leaves in-flight URLs to finish, and is a no-op on an already-terminal job, in `backend/src/jobs/jobs.service.spec.ts` and `backend/src/jobs/url-checker.service.spec.ts`
 
 ### Implementation
 
