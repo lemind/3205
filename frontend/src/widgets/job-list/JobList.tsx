@@ -1,7 +1,10 @@
-import { useListJobsQuery } from '../../entities/job/api';
+import { jobsApi, useListJobsQuery } from '../../entities/job/api';
 import type { JobStatus } from '../../entities/job/model';
 import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
+
+const ACTIVE_POLL_INTERVAL_MS = 1500;
+const TERMINAL_JOB_STATUSES: readonly JobStatus[] = ['completed', 'cancelled', 'failed'];
 
 const TONE_BY_STATUS: Record<JobStatus, BadgeTone> = {
   pending: 'neutral',
@@ -18,7 +21,18 @@ export function JobList({
   activeJobId: string | null;
   onSelect: (jobId: string) => void;
 }) {
-  const { data, isLoading, error } = useListJobsQuery();
+  // Without this, a job that finishes in the background (the common case — no
+  // create/cancel action to trigger a tag invalidation) would leave this list
+  // showing stale 'in_progress' indefinitely. Same useQueryState-peek pattern as
+  // JobDetail: poll while any listed job is non-terminal, stop once none are.
+  const cached = jobsApi.endpoints.listJobs.useQueryState();
+  const allTerminal = cached.data
+    ? cached.data.every((job) => TERMINAL_JOB_STATUSES.includes(job.status))
+    : false;
+
+  const { data, isLoading, error } = useListJobsQuery(undefined, {
+    pollingInterval: allTerminal ? 0 : ACTIVE_POLL_INTERVAL_MS,
+  });
 
   if (isLoading) {
     return (
