@@ -20,27 +20,40 @@ export class UrlCheckerService {
   private readonly logger = new Logger(UrlCheckerService.name);
 
   async processJob(job: Job): Promise<void> {
-    const limit = pLimit(MAX_CONCURRENT_CHECKS_PER_JOB);
-    this.logger.log(`Job ${job.id}: starting ${job.results.length} check(s)`);
+    // The whole body is wrapped: checkUrl catches everything it can throw (fetch
+    // errors, timeouts), so this only fires for a genuinely unexpected failure.
+    // Without it, the rejection would be unhandled — processJob is invoked
+    // fire-and-forget (`void`) by JobsService — which can crash the whole process,
+    // not just leave one job stuck. `failed` is reserved for exactly this per ADR-0004.
+    try {
+      const limit = pLimit(MAX_CONCURRENT_CHECKS_PER_JOB);
+      this.logger.log(`Job ${job.id}: starting ${job.results.length} check(s)`);
 
-    await Promise.all(
-      job.results.map((result) =>
-        limit(() => {
-          // p-limit always dispatches asynchronously (even the first task), so this
-          // only flips once a URL actually starts — job.status stays 'pending' for
-          // any caller inspecting it synchronously right after creation.
-          if (job.status === 'pending') {
-            job.status = 'in_progress';
-          }
-          return this.checkUrl(result);
-        }),
-      ),
-    );
+      await Promise.all(
+        job.results.map((result) =>
+          limit(() => {
+            // p-limit always dispatches asynchronously (even the first task), so this
+            // only flips once a URL actually starts — job.status stays 'pending' for
+            // any caller inspecting it synchronously right after creation.
+            if (job.status === 'pending') {
+              job.status = 'in_progress';
+            }
+            return this.checkUrl(result);
+          }),
+        ),
+      );
 
-    // Cancellation doesn't exist yet (JobsService.cancelJob lands in Phase 7 / T045);
-    // the cancelled-aware terminal-status check from ADR-0004 belongs there, not here.
-    job.status = 'completed';
-    this.logger.log(`Job ${job.id}: completed`);
+      // Cancellation doesn't exist yet (JobsService.cancelJob lands in Phase 7 / T045);
+      // the cancelled-aware terminal-status check from ADR-0004 belongs there, not here.
+      job.status = 'completed';
+      this.logger.log(`Job ${job.id}: completed`);
+    } catch (err) {
+      job.status = 'failed';
+      this.logger.error(
+        `Job ${job.id}: failed unexpectedly`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
   }
 
   private async checkUrl(result: UrlCheckResult): Promise<void> {

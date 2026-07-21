@@ -100,4 +100,14 @@ describe('UrlCheckerService', () => {
     expect(job.results[0].httpStatus).toBeNull();
     expect(job.results[0].errorMessage).toBe('getaddrinfo ENOTFOUND');
   });
+
+  it('marks the job failed instead of throwing when something unexpected breaks processing', async () => {
+    const job = buildJob(1);
+    // Simulates a genuinely unexpected failure (not a per-URL fetch error, which
+    // checkUrl already handles) — e.g. a bug that leaves job.results malformed.
+    (job as unknown as { results: unknown }).results = null;
+
+    await expect(service.processJob(job)).resolves.toBeUndefined();
+    expect(job.status).toBe('failed');
+  });
 });
