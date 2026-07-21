@@ -8,7 +8,16 @@ import { UrlCheckerService } from './url-checker.service';
 /** Bare domains (no scheme) aren't valid `fetch()` targets — default to https:// rather
  *  than surfacing a confusing "Failed to parse URL" error for the common "google.com" case. */
 function normalizeUrl(url: string): string {
-  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url) ? url : `https://${url}`;
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url)) {
+    return url;
+  }
+  // Protocol-relative ("//example.com") already has the authority slashes — only
+  // the scheme itself is missing, so prepending the full "https://" would double
+  // them up (`https:////example.com`, harmless but needlessly ugly once stored).
+  if (url.startsWith('//')) {
+    return `https:${url}`;
+  }
+  return `https://${url}`;
 }
 
 @Injectable()
@@ -58,7 +67,11 @@ export class JobsService {
       urlCount: job.results.length,
       successCount: job.results.filter((r) => r.status === 'success').length,
       errorCount: job.results.filter((r) => r.status === 'error').length,
-      results: job.results,
+      // A copy, not the live internal array — the caller must never see it mutate
+      // out from under it if serialization is ever deferred past this call returning
+      // (e.g. an async interceptor added later), even though today's synchronous
+      // Express response cycle makes that a latent risk rather than a live one.
+      results: [...job.results],
     };
   }
 }

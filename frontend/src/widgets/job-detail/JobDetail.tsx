@@ -38,7 +38,10 @@ export function JobDetail({ jobId }: { jobId: string }) {
     );
   }
 
-  if (error) {
+  // Only treat this as a hard failure if we have no data at all — a transient poll
+  // error shouldn't wipe an already-rendered job (RTK Query keeps the last good
+  // `data` around even when a later poll fails).
+  if (error && !data) {
     return <p className="text-error text-sm">Failed to load job.</p>;
   }
 

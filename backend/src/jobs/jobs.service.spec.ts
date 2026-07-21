@@ -81,6 +81,7 @@ describe('JobsService', () => {
         'http://example.com',
         'https://example.org',
         'ftp://example.net',
+        '//protocol-relative.example.com',
       ],
     });
 
@@ -91,6 +92,25 @@ describe('JobsService', () => {
       'http://example.com',
       'https://example.org',
       'ftp://example.net',
+      'https://protocol-relative.example.com',
     ]);
+  });
+
+  it("getJob's results are a copy, not the live internal array", () => {
+    const { jobId } = service.createJob({ urls: ['https://example.com'] });
+
+    const first = service.getJob(jobId);
+    first.results.push({
+      url: 'https://tampered.example.com',
+      status: 'pending',
+      httpStatus: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      durationMs: null,
+    });
+
+    const second = service.getJob(jobId);
+    expect(second.results).toHaveLength(1);
   });
 });
