@@ -1,1 +1,4 @@
 Фулстек 3205 ТЗ.md
+
+# Local Claude Code config (machine-specific tool permissions, not shared project config)
+.claude/
