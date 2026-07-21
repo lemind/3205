@@ -14,7 +14,7 @@ A REST API (NestJS) accepts a list of URLs, checks each with an HTTP `HEAD` requ
 
 **Primary Dependencies**:
 - Backend: NestJS, `class-validator`/`class-transformer` (DTO validation), `p-limit` (per-job concurrency cap) — [ADR-0002](../../docs/adr/0002-backend-framework-nestjs.md), [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md).
-- Frontend: React, Redux Toolkit + RTK Query, Vite — [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md), [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md).
+- Frontend: React, Redux Toolkit + RTK Query, Vite, Tailwind CSS + daisyUI — [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md), [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md), [ADR-0007](../../docs/adr/0007-frontend-styling-tailwind-daisyui.md).
 
 **Storage**: In-memory only (`Map` inside a Nest singleton provider) — no database — [ADR-0003](../../docs/adr/0003-in-memory-job-storage.md).
 
