@@ -1,4 +1,5 @@
 import { jobsApi, useListJobsQuery } from '../../entities/job/api';
+import { isJobSettled } from '../../entities/job/lib';
 import type { JobStatus } from '../../entities/job/model';
 import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
@@ -23,16 +24,10 @@ export function JobList({
   // Without this, a job that finishes in the background (the common case — no
   // create/cancel action to trigger a tag invalidation) would leave this list
   // showing stale 'in_progress' indefinitely. Same useQueryState-peek pattern as
-  // JobDetail. Deliberately keyed on the counts, not job.status: a cancelled
-  // job's status flips immediately, well before its in-flight/queued URLs
-  // actually settle — checking job.status alone would stop polling with stale
-  // success/error counts still short of urlCount.
+  // JobDetail, and the same isJobSettled predicate — see its doc comment for why
+  // this isn't just a job.status check.
   const cached = jobsApi.endpoints.listJobs.useQueryState();
-  const allTerminal = cached.data
-    ? cached.data.every(
-        (job) => job.successCount + job.errorCount + job.cancelledCount === job.urlCount,
-      )
-    : false;
+  const allTerminal = cached.data ? cached.data.every(isJobSettled) : false;
 
   const { data, isLoading, error } = useListJobsQuery(undefined, {
     pollingInterval: allTerminal ? 0 : ACTIVE_POLL_INTERVAL_MS,

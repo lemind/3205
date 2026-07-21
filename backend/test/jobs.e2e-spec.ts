@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { AppModule } from '../src/app.module';
+import { AllExceptionsFilter } from '../src/all-exceptions.filter';
 import type { JobDetailResponse } from '../src/jobs/models/job';
 
 const TERMINAL_STATUSES = ['completed', 'cancelled', 'failed'];
@@ -50,6 +51,9 @@ describe('Jobs (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe());
+    // Matches main.ts's real bootstrap — otherwise these tests verify a
+    // config that isn't the one actually serving production requests.
+    app.useGlobalFilters(new AllExceptionsFilter());
     await app.init();
 
     // Mocked only after the module is fully compiled and routes are registered —

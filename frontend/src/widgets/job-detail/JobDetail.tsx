@@ -1,4 +1,5 @@
 import { jobsApi, useGetJobQuery } from '../../entities/job/api';
+import { isJobSettled } from '../../entities/job/lib';
 import type { JobStatus, UrlCheckStatus } from '../../entities/job/model';
 import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
@@ -25,14 +26,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
   // *previous* poll's result without an effect or a ref (both disallowed by
   // eslint-plugin-react-hooks for exactly this "value from own hook" pattern).
   const cached = jobsApi.endpoints.getJob.useQueryState(jobId);
-  // Deliberately keyed on per-URL results, not job.status: cancelling sets
-  // job.status = 'cancelled' immediately, well before the in-flight checks it
-  // let finish (and the still-queued ones waiting for a slot to free) actually
-  // converge — polling on job.status alone would freeze the UI on stale
-  // in_progress/pending rows for as long as those checks take to resolve.
-  const isTerminal = cached.data
-    ? cached.data.results.every((r) => TERMINAL_URL_STATUSES.includes(r.status))
-    : false;
+  const isTerminal = cached.data ? isJobSettled(cached.data) : false;
 
   const { data, isLoading, error } = useGetJobQuery(jobId, {
     pollingInterval: isTerminal ? 0 : ACTIVE_POLL_INTERVAL_MS,
