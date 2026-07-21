@@ -25,7 +25,11 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <label htmlFor="urls" className="text-base-content/70 font-mono text-sm">
+        URLs to check (one per line)
+      </label>
       <textarea
+        id="urls"
         className="textarea textarea-bordered border-secondary/50 focus:border-secondary bg-base-100 w-full font-mono"
         rows={6}
         placeholder={'https://example.com\nhttps://example.org'}

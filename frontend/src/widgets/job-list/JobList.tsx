@@ -64,10 +64,18 @@ export function JobList({
           {data.map((job) => (
             <tr
               key={job.id}
+              role="button"
+              tabIndex={0}
               className={`hover:bg-secondary/10 cursor-pointer ${
                 job.id === activeJobId ? 'bg-secondary/15 border-secondary border-l-2' : ''
               }`}
               onClick={() => onSelect(job.id)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onSelect(job.id);
+                }
+              }}
             >
               <td className="font-mono text-xs">{new Date(job.createdAt).toLocaleString()}</td>
               <td>
