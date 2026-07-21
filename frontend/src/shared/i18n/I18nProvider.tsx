@@ -27,6 +27,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     statusLabel: (status) => dict.status[status],
     progressText: dict.progressText,
     countsText: dict.countsText,
+    checkErrorMessage: dict.checkErrorMessage,
   };
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

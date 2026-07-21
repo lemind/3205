@@ -90,7 +90,12 @@ describe('UrlCheckerService', () => {
     expect(job.results[1].errorMessage).toEqual(expect.any(String));
   });
 
-  it('classifies a network error as error with httpStatus null', async () => {
+  it('classifies a network error as error with httpStatus null, using a fixed generic message', async () => {
+    // The raw err.message isn't passed through: undici's own text for any network
+    // failure (DNS, connection refused, TLS...) is just "fetch failed" regardless
+    // of cause, so a fixed "Network error" is used instead — see the comment in
+    // url-checker.service.ts's catch block. This also keeps the message translatable
+    // on the frontend (a small known vocabulary, not arbitrary system text).
     fetchMock.mockRejectedValue(new Error('getaddrinfo ENOTFOUND'));
 
     const job = buildJob(1);
@@ -98,7 +103,7 @@ describe('UrlCheckerService', () => {
 
     expect(job.results[0].status).toBe('error');
     expect(job.results[0].httpStatus).toBeNull();
-    expect(job.results[0].errorMessage).toBe('getaddrinfo ENOTFOUND');
+    expect(job.results[0].errorMessage).toBe('Network error');
   });
 
   it('marks the job failed instead of throwing when something unexpected breaks processing', async () => {

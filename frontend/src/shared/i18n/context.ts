@@ -13,6 +13,7 @@ export interface I18nContextValue {
     errorCount: number,
     cancelledCount: number,
   ) => string;
+  checkErrorMessage: (raw: string) => string;
 }
 
 export const I18nContext = createContext<I18nContextValue | null>(null);

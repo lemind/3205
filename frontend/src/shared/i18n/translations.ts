@@ -36,9 +36,19 @@ interface Dictionary {
     errorCount: number,
     cancelledCount: number,
   ) => string;
+  // Translates the small, fixed vocabulary of per-URL check errors the backend
+  // emits (url-checker.service.ts deliberately emits one of a few fixed messages,
+  // not raw system/network error text — see its comment). Anything that doesn't
+  // match a known shape (e.g. "HTTP 404") is returned unchanged.
+  checkErrorMessage: (raw: string) => string;
 }
 
-export type TranslationKey = keyof Omit<Dictionary, 'status' | 'progressText' | 'countsText'>;
+export type TranslationKey = keyof Omit<
+  Dictionary,
+  'status' | 'progressText' | 'countsText' | 'checkErrorMessage'
+>;
+
+const TIMEOUT_PATTERN = /^Request timed out after (\d+)ms$/;
 
 export const translations: Record<Lang, Dictionary> = {
   en: {
@@ -73,6 +83,11 @@ export const translations: Record<Lang, Dictionary> = {
     countsText: (urlCount, successCount, errorCount, cancelledCount) =>
       `${urlCount} total · ${successCount} ok · ${errorCount} err` +
       (cancelledCount > 0 ? ` · ${cancelledCount} cancelled` : ''),
+    checkErrorMessage: (raw) => {
+      if (raw === 'Network error') return 'Network error';
+      if (raw === 'Unknown error') return 'Unknown error';
+      return raw;
+    },
   },
   ru: {
     appTitle: 'Асинхронная проверка URL',
@@ -106,5 +121,12 @@ export const translations: Record<Lang, Dictionary> = {
     countsText: (urlCount, successCount, errorCount, cancelledCount) =>
       `всего ${urlCount} · успешно ${successCount} · ошибок ${errorCount}` +
       (cancelledCount > 0 ? ` · отменено ${cancelledCount}` : ''),
+    checkErrorMessage: (raw) => {
+      const timeoutMatch = TIMEOUT_PATTERN.exec(raw);
+      if (timeoutMatch) return `Превышено время ожидания (${timeoutMatch[1]} мс)`;
+      if (raw === 'Network error') return 'Сетевая ошибка';
+      if (raw === 'Unknown error') return 'Неизвестная ошибка';
+      return raw;
+    },
   },
 };

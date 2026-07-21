@@ -28,7 +28,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
   // eslint-plugin-react-hooks for exactly this "value from own hook" pattern).
   const cached = jobsApi.endpoints.getJob.useQueryState(jobId);
   const isTerminal = cached.data ? isJobSettled(cached.data) : false;
-  const { t, statusLabel, progressText } = useTranslation();
+  const { t, statusLabel, progressText, checkErrorMessage } = useTranslation();
 
   const { data, isLoading, error } = useGetJobQuery(jobId, {
     pollingInterval: isTerminal ? 0 : ACTIVE_POLL_INTERVAL_MS,
@@ -90,7 +90,9 @@ export function JobDetail({ jobId }: { jobId: string }) {
                     </StatusBadge>
                   </td>
                   <td>{result.httpStatus ?? '—'}</td>
-                  <td className="max-w-xs truncate">{result.errorMessage ?? '—'}</td>
+                  <td className="max-w-xs truncate">
+                    {result.errorMessage ? checkErrorMessage(result.errorMessage) : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>
