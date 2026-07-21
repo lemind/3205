@@ -10,8 +10,8 @@ This describes the target dev/run workflow and a manual walkthrough that exercis
 docker-compose up --build
 ```
 
-- Frontend: whatever host port `docker-compose.yml` maps to the `frontend` service's nginx (port 80 inside the container) — **not** `:5173`, that's only the Vite dev server port used in local dev below.
-- Backend API: same origin, under `/api` (nginx-proxied per ADR-0001) — no separate host/port to configure.
+- Frontend: http://localhost:8080 (nginx, port 80 inside the container) — **not** `:5173`, that's only the Vite dev server port used in local dev below.
+- Backend API: reachable through the frontend at `/api` (nginx-proxied per ADR-0001), and also directly at http://localhost:3000/api for debugging.
 
 ## Run for local development (no Docker)
 
@@ -31,7 +31,7 @@ cd frontend && npm install && npm run dev
 Once Setup is scaffolded (backend `GET /api/health` + a frontend page that calls it — see [tasks.md](tasks.md) Phase 1), this is the first thing worth actually running:
 
 ```bash
-curl http://localhost:<backend-port>/api/health   # expect { "status": "ok" }
+curl http://localhost:3000/api/health   # expect { "status": "ok" }
 ```
 
 ...and opening the frontend in a browser should show a "Backend: ok" indicator. This proves the Nest app boots, the Vite/nginx `/api` proxy is wired correctly, and both containers start under Docker Compose — all before any job/URL logic exists to test.

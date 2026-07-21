@@ -19,15 +19,15 @@
 
 **Purpose**: Project scaffolding for both apps, matching [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md) — ending with a minimal, runnable health check so the wiring is provably correct before any domain logic exists.
 
-- [ ] T001 Scaffold NestJS project at `backend/` (Nest CLI or manual), TypeScript strict mode
-- [ ] T002 [P] Scaffold Vite + React + TypeScript project at `frontend/`, with the FSD folders from [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md): `src/app`, `src/pages`, `src/widgets`, `src/features`, `src/entities`, `src/shared`
-- [ ] T003 [P] Add `backend/Dockerfile` and `frontend/Dockerfile` (multi-stage: Vite build → nginx) and root `docker-compose.yml` per [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md)
-- [ ] T004 [P] Add `frontend/nginx.conf` proxying `/api/*` to the `backend` service on the compose network
-- [ ] T005 [P] Configure ESLint + Prettier in `backend/`
-- [ ] T006 [P] Configure ESLint + Prettier in `frontend/`
-- [ ] T007 [P] Configure Vite dev server proxy (`server.proxy['/api']` → backend) in `frontend/vite.config.ts` per [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md)
-- [ ] T008 [P] Implement `GET /api/health` returning `{ status: 'ok' }` via a minimal `AppController` (no dependency on `JobsModule`) in `backend/src/app.controller.ts` (depends: T001)
-- [ ] T009 [P] Implement a minimal status page that `fetch`es `/api/health` on load and renders "Backend: ok" / "Backend: unreachable" — no Redux dependency yet, just proves the proxy/nginx wiring — in `frontend/src/App.tsx` (depends: T002, T007)
+- [x] T001 Scaffold NestJS project at `backend/` (Nest CLI or manual), TypeScript strict mode — `nest new --strict --skip-git`; note the CLI's `--skip-git` also suppressed `.gitignore` generation, added manually (see T003 note)
+- [x] T002 [P] Scaffold Vite + React + TypeScript project at `frontend/`, with the FSD folders from [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md): `src/app`, `src/pages`, `src/widgets`, `src/features`, `src/entities`, `src/shared`
+- [x] T003 [P] Add `backend/Dockerfile` and `frontend/Dockerfile` (multi-stage: Vite build → nginx) and root `docker-compose.yml` per [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md) — backend:3000, frontend nginx:80 mapped to host 8080; also added `backend/.gitignore` (missing after `--skip-git`, would have staged `node_modules`)
+- [x] T004 [P] Add `frontend/nginx.conf` proxying `/api/*` to the `backend` service on the compose network — verified path is preserved (no double-prefixing) since Nest's global prefix is also `api`
+- [x] T005 [P] Configure ESLint + Prettier in `backend/` — already provided by the Nest CLI scaffold; verified `npm run lint` is clean
+- [x] T006 [P] Configure ESLint + Prettier in `frontend/` — replaced the Vite template's default `oxlint` with ESLint (flat config) + Prettier, matching backend's `.prettierrc`; verified `npm run lint` is clean
+- [x] T007 [P] Configure Vite dev server proxy (`server.proxy['/api']` → backend) in `frontend/vite.config.ts` per [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md)
+- [x] T008 [P] Implement `GET /api/health` returning `{ status: 'ok' }` via a minimal `AppController` (no dependency on `JobsModule`) in `backend/src/app.controller.ts` (depends: T001) — added `app.setGlobalPrefix('api')` in `main.ts`; updated the generated unit + e2e tests to match; all pass
+- [x] T009 [P] Implement a minimal status page that `fetch`es `/api/health` on load and renders "Backend: ok" / "Backend: unreachable" — no Redux dependency yet, just proves the proxy/nginx wiring — in `frontend/src/App.tsx` (depends: T002, T007) — verified live via `npm run dev` + `curl localhost:5173/api/health` through the proxy (200, `{"status":"ok"}`)
 
 **Checkpoint**: `docker-compose up --build` (or the two `npm run dev`s) boots both apps and the frontend visibly confirms it can reach the backend via `/api/health` — see [quickstart.md](quickstart.md) "Step 0". This is the first "run it and see it" milestone, before any job logic exists.
 
