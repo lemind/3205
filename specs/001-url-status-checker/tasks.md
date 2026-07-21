@@ -37,13 +37,13 @@
 
 **Purpose**: Shared types, module skeletons, and store setup that every user story builds on. **No user story work starts before this phase is done.**
 
-- [ ] T010 [P] Define `Job`, `JobStatus` types in `backend/src/jobs/models/job.ts` per [data-model.md](data-model.md#job)
-- [ ] T011 [P] Define `UrlCheckResult`, `UrlCheckStatus` types in `backend/src/jobs/models/url-check-result.ts` per [data-model.md](data-model.md#urlcheckresult)
-- [ ] T012 Create `JobsModule` with empty `JobsController`/`JobsService`/`UrlCheckerService` in `backend/src/jobs/jobs.module.ts` per [ADR-0002](../../docs/adr/0002-backend-framework-nestjs.md) (depends: T010, T011)
-- [ ] T013 Implement the in-memory `Map<string, Job>` store as a field on `JobsService` (singleton provider) in `backend/src/jobs/jobs.service.ts` per [ADR-0003](../../docs/adr/0003-in-memory-job-storage.md) (depends: T012)
-- [ ] T014 [P] Define `Job`/`UrlCheckResult`/status-enum types matching [contracts/openapi.yaml](contracts/openapi.yaml) in `frontend/src/entities/job/model.ts`
-- [ ] T015 Set up the Redux store and an empty `jobsApi` (`createApi`, `reducerPath: 'jobsApi'`) in `frontend/src/app/store.ts` and `frontend/src/entities/job/api.ts` per [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md)
-- [ ] T016 [P] Build `StatusBadge` and `Spinner` primitives in `frontend/src/shared/ui/`
+- [x] T010 [P] Define `Job`, `JobStatus` types in `backend/src/jobs/models/job.ts` per [data-model.md](data-model.md#job)
+- [x] T011 [P] Define `UrlCheckResult`, `UrlCheckStatus` types in `backend/src/jobs/models/url-check-result.ts` per [data-model.md](data-model.md#urlcheckresult)
+- [x] T012 Create `JobsModule` with empty `JobsController`/`JobsService`/`UrlCheckerService` in `backend/src/jobs/jobs.module.ts` per [ADR-0002](../../docs/adr/0002-backend-framework-nestjs.md) (depends: T010, T011) — also registered `JobsModule` in `AppModule` (otherwise it's never instantiated); `JobsController` kept truly empty, no constructor yet — that wiring lands in T020 when the first route needs it
+- [x] T013 Implement the in-memory `Map<string, Job>` store as a field on `JobsService` (singleton provider) in `backend/src/jobs/jobs.service.ts` per [ADR-0003](../../docs/adr/0003-in-memory-job-storage.md) (depends: T012)
+- [x] T014 [P] Define `Job`/`UrlCheckResult`/status-enum types matching [contracts/openapi.yaml](contracts/openapi.yaml) in `frontend/src/entities/job/model.ts`
+- [x] T015 Set up the Redux store and an empty `jobsApi` (`createApi`, `reducerPath: 'jobsApi'`) in `frontend/src/app/store.ts` and `frontend/src/entities/job/api.ts` per [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md) — also wrapped `<App />` in `<Provider store={store}>` in `main.tsx`; verified live (screenshot + zero browser console errors) that the Provider didn't break the running app
+- [x] T016 [P] Build `StatusBadge` and `Spinner` primitives in `frontend/src/shared/ui/` — deliberately generic (`tone` prop, no import of job-domain types), per ADR-0006's layering rule that `shared/` has zero domain knowledge
 
 **Checkpoint**: Foundation ready — user story implementation can begin.
 
