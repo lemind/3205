@@ -9,6 +9,20 @@ import { AllExceptionsFilter } from '../src/all-exceptions.filter';
 import type { JobDetailResponse } from '../src/jobs/models/job';
 
 const TERMINAL_STATUSES = ['completed', 'cancelled', 'failed'];
+const TERMINAL_URL_STATUSES = ['success', 'error', 'cancelled'];
+
+// Checking job.status alone isn't enough: cancelling flips it to 'cancelled'
+// immediately, before the just-released in-flight checks have necessarily had
+// their continuations run — a real race under slower/contended schedulers
+// (reproduced in CI, never locally) that reads a transient snapshot where a
+// result hasn't flipped from 'in_progress' to 'success' yet. Same class of bug
+// as the frontend's isJobSettled fix, here in the test's own wait condition.
+function isSettled(job: JobDetailResponse): boolean {
+  return (
+    TERMINAL_STATUSES.includes(job.status) &&
+    job.results.every((r) => TERMINAL_URL_STATUSES.includes(r.status))
+  );
+}
 
 describe('Jobs (e2e)', () => {
   let app: INestApplication<App>;
@@ -102,9 +116,7 @@ describe('Jobs (e2e)', () => {
     const { jobId } = createRes.body as { jobId: string };
     expect(jobId).toBeTruthy();
 
-    const job = await pollUntil(jobId, (j) =>
-      TERMINAL_STATUSES.includes(j.status),
-    );
+    const job = await pollUntil(jobId, isSettled);
 
     expect(job.status).toBe('completed');
     expect(job.urlCount).toBe(2);
@@ -148,9 +160,7 @@ describe('Jobs (e2e)', () => {
     await request(app.getHttpServer()).delete(`/api/jobs/${jobId}`).expect(204);
     releaseAllHeld();
 
-    const job = await pollUntil(jobId, (j) =>
-      TERMINAL_STATUSES.includes(j.status),
-    );
+    const job = await pollUntil(jobId, isSettled);
 
     expect(job.status).toBe('cancelled');
     expect(job.results.filter((r) => r.status === 'success')).toHaveLength(5);
@@ -164,7 +174,7 @@ describe('Jobs (e2e)', () => {
       .expect(201);
     const { jobId } = createRes.body as { jobId: string };
 
-    await pollUntil(jobId, (j) => TERMINAL_STATUSES.includes(j.status));
+    await pollUntil(jobId, isSettled);
 
     await request(app.getHttpServer()).delete(`/api/jobs/${jobId}`).expect(204);
     const job = await getJob(jobId);
