@@ -33,9 +33,9 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
         onChange={(event) => setText(event.target.value)}
       />
       <button type="submit" className="btn btn-primary" disabled={urls.length === 0 || isLoading}>
-        {isLoading ? 'Запуск…' : 'Запустить проверку'}
+        {isLoading ? 'Running…' : 'Run Check'}
       </button>
-      {error && <p className="text-error text-sm">Не удалось создать задание.</p>}
+      {error && <p className="text-error text-sm">Failed to create job.</p>}
     </form>
   );
 }

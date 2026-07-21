@@ -89,7 +89,7 @@
 - [ ] T027 [US3] Implement `JobsController.getJob` (`GET /api/jobs/:id`, 404 on missing) in `backend/src/jobs/jobs.controller.ts`
 - [ ] T028 [US3] Implement `JobsService.getJob` in `backend/src/jobs/jobs.service.ts` (depends: T021)
 - [ ] T029 [US3] Implement `jobsApi.getJob` query (keyed by `jobId`) in `frontend/src/entities/job/api.ts` per [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md) (depends: T023) — note: `pollingInterval` is a hook-call option, not an endpoint-definition option; it's set where the query is used (T031), not here
-- [ ] T030 [US3] Implement `JobDetail` widget — "X из Y обработано" progress + per-URL table (status/httpStatus/errorMessage) — in `frontend/src/widgets/job-detail/`
+- [ ] T030 [US3] Implement `JobDetail` widget — "X of Y processed" progress + per-URL table (status/httpStatus/errorMessage) — in `frontend/src/widgets/job-detail/`
 - [ ] T031 [US3] Wire `JobDetail` into `frontend/src/pages/jobs/` via `useGetJobQuery(activeJobId, { skip: !activeJobId, pollingInterval })`, computing `pollingInterval` from the job's current status (non-zero while non-terminal, `0` once terminal) at the call site (depends: T025, T029)
 
 **Checkpoint**: US1 + US3 together are a demoable, correct single-job submit-and-watch flow.
@@ -167,6 +167,7 @@
 - [ ] T050 Run the full [quickstart.md](quickstart.md) manual walkthrough end-to-end; fix any discrepancies found
 - [ ] T051 [P] Add a global exception filter in `backend/src/main.ts` and surface RTK Query `error`/`isLoading` states in the frontend widgets
 - [ ] T052 Final `docker-compose up --build` smoke test from a clean checkout (verifies SC-005)
+- [ ] T053 [P] Add `README.ru.md` — Russian translation of the finished root `README.md` (do this last, once T048's content is final, so it's translating the finished doc rather than something that'll drift), with a language-switch link at the top of both files
 
 ---
 
