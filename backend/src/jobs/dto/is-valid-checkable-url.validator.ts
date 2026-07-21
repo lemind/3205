@@ -1,30 +1,41 @@
-import { registerDecorator, ValidationOptions } from 'class-validator';
+import {
+  registerDecorator,
+  ValidationArguments,
+  ValidationOptions,
+} from 'class-validator';
 import isURL from 'validator/lib/isURL';
 import { normalizeUrl } from '../util/normalize-url';
 
-// Runs on the raw (pre-normalization) input — normalizes internally just for the
-// check, without mutating the DTO — so bare domains ("google.com") still pass
-// while typos that no fetch() would ever reach ("dfgdfg;") are rejected up front,
-// instead of wasting a check slot only to fail as a DNS/parse error later.
-export function IsValidCheckableUrl(validationOptions?: ValidationOptions) {
+const URL_OPTIONS = { protocols: ['http', 'https'], require_protocol: true };
+
+function isValidUrlEntry(value: unknown): boolean {
+  return typeof value === 'string' && isURL(normalizeUrl(value), URL_OPTIONS);
+}
+
+// Validates the whole array (not per-element via `each: true`) so the error message
+// can name exactly which line(s) are wrong, matching the 1-per-line textarea the
+// frontend actually shows the user — "urls must each be a valid URL" tells a user
+// nothing about which of their 10 lines has the typo.
+export function AllUrlsValid(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
     registerDecorator({
-      name: 'isValidCheckableUrl',
+      name: 'allUrlsValid',
       target: object.constructor,
       propertyName,
       options: validationOptions,
       validator: {
         validate(value: unknown): boolean {
-          return (
-            typeof value === 'string' &&
-            isURL(normalizeUrl(value), {
-              protocols: ['http', 'https'],
-              require_protocol: true,
-            })
-          );
+          return Array.isArray(value) && value.every(isValidUrlEntry);
         },
-        defaultMessage(): string {
-          return `each value in $property must be a valid URL`;
+        defaultMessage(args: ValidationArguments): string {
+          const values = Array.isArray(args.value) ? args.value : [];
+          const invalid = values
+            .map((v: unknown, i: number) => ({ v, line: i + 1 }))
+            .filter(({ v }) => !isValidUrlEntry(v));
+          const list = invalid
+            .map(({ v, line }) => `line ${line} ("${String(v)}")`)
+            .join(', ');
+          return `Not a valid URL: ${list}`;
         },
       },
     });

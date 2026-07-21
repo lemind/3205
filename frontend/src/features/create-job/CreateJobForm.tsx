@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useCreateJobMutation } from '../../entities/job/api';
+import { getApiErrorMessage } from '../../shared/lib/api-error';
 
 export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => void }) {
   const [text, setText] = useState('');
@@ -36,6 +37,11 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
+      {error && (
+        <p className="text-error font-mono text-sm">
+          ! {getApiErrorMessage(error, 'Failed to create job.')}
+        </p>
+      )}
       <button
         type="submit"
         className="btn btn-primary neon-text font-mono tracking-wider uppercase"
@@ -43,7 +49,6 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
       >
         {isLoading ? 'Running…' : 'Run Check'}
       </button>
-      {error && <p className="text-error font-mono text-sm">! Failed to create job.</p>}
     </form>
   );
 }

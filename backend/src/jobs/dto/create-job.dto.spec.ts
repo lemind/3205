@@ -24,11 +24,13 @@ describe('CreateJobDto', () => {
   it('rejects a malformed URL (typo with no valid TLD/host)', async () => {
     const errors = await validateUrls(['https://dfgdfg;']);
     expect(errors).toHaveLength(1);
-    expect(errors[0].constraints).toHaveProperty('isValidCheckableUrl');
+    expect(errors[0].constraints).toHaveProperty('allUrlsValid');
   });
 
-  it('rejects the whole request if any single entry is malformed', async () => {
+  it('names the specific line(s) that are malformed', async () => {
     const errors = await validateUrls(['https://example.com', 'not a url']);
     expect(errors).toHaveLength(1);
+    expect(errors[0].constraints?.allUrlsValid).toContain('line 2');
+    expect(errors[0].constraints?.allUrlsValid).toContain('not a url');
   });
 });
