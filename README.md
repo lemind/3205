@@ -16,6 +16,17 @@ Full rationale for every major choice is in [docs/adr/](docs/adr/README.md).
 - **Frontend**: Vitest + React Testing Library — an integration test asserting switching the active job mid-poll never renders stale data (SC-003).
 - **CI**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint + build + test for both apps on every push and PR into `main`.
 
+Coverage numbers (`npm run test:cov` in either app), from the unit suites only:
+
+| | Statements | Branch | Functions | Lines |
+|---|---|---|---|---|
+| Backend | 77.1% | 72.1% | 82.1% | 78.2% |
+| Frontend | 55.3% | 38.6% | 52.9% | 58.1% |
+
+Not 100% by design, not oversight — per [AGENTS.md](AGENTS.md)'s testing philosophy (meaningful confidence over exhaustive QA):
+- Backend's `jobs.controller.ts`/`app.module.ts`/`jobs.module.ts`/`main.ts` show 0% here because Jest's unit config (`backend/package.json`) and its e2e config (`backend/test/jest-e2e.json`) run and report separately — the controller's actual routes are exercised by the e2e suite, not double-counted here.
+- Frontend intentionally has one targeted integration test (the stale-switch regression for SC-003, the spec's sharpest correctness requirement) rather than unit tests for every component — most of the untested code is presentational JSX with no branching logic worth a dedicated test.
+
 ## Conventions / Practices
 
 - **Spec-driven**: every feature has a spec, plan, and task breakdown under `specs/` (via [spec-kit](.specify/)) before code is written.

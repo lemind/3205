@@ -2,3 +2,6 @@
 
 # Local Claude Code config (machine-specific tool permissions, not shared project config)
 .claude/
+
+# Test coverage reports (backend's Jest config writes here via coverageDirectory: "../coverage")
+/coverage
