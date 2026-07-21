@@ -73,4 +73,24 @@ describe('JobsService', () => {
   it('getJob throws NotFoundException for an unknown id', () => {
     expect(() => service.getJob('does-not-exist')).toThrow(NotFoundException);
   });
+
+  it('prepends https:// to a bare domain, and leaves URLs with an existing scheme untouched', () => {
+    const { jobId } = service.createJob({
+      urls: [
+        'google.com',
+        'http://example.com',
+        'https://example.org',
+        'ftp://example.net',
+      ],
+    });
+
+    const detail = service.getJob(jobId);
+
+    expect(detail.results.map((r) => r.url)).toEqual([
+      'https://google.com',
+      'http://example.com',
+      'https://example.org',
+      'ftp://example.net',
+    ]);
+  });
 });

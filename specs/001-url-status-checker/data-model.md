@@ -46,7 +46,7 @@ Represents the check of one URL within a job.
 
 | Field | Type | Notes |
 |---|---|---|
-| `url` | `string` | As submitted, unmodified |
+| `url` | `string` | As submitted, except a `https://` scheme is prepended if the entry had none (e.g. `google.com` → `https://google.com`) — `fetch()` requires an absolute URL and can't check a bare domain |
 | `status` | `UrlCheckStatus` | See state machine below |
 | `httpStatus` | `number` \| `null` | HTTP status code from the `HEAD` response, if one was received |
 | `errorMessage` | `string` \| `null` | Set only on `status === 'error'` (network error, timeout, or 4xx/5xx response — classification rule below) |
