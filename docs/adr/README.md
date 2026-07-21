@@ -11,5 +11,6 @@ One decision per file, [Nygard style](https://cognitect.com/blog/2011/11/15/docu
 | [0005](0005-frontend-state-and-data-layer.md) | Frontend state & data layer: Redux Toolkit + RTK Query | Accepted |
 | [0006](0006-frontend-architecture-fsd.md) | Frontend architecture: Feature-Sliced Design (FSD) | Accepted |
 | [0007](0007-frontend-styling-tailwind-daisyui.md) | Frontend styling: Tailwind CSS + daisyUI | Accepted |
+| [0008](0008-frontend-i18n.md) | Frontend i18n: custom context + dictionary, no library | Accepted |
 
 Related: [spec.md](../../specs/001-url-status-checker/spec.md) (user stories & functional requirements), [plan.md](../../specs/001-url-status-checker/plan.md) (technical plan that wires these decisions together).

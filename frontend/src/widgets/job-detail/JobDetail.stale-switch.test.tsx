@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { useState } from 'react';
 import { jobsApi } from '../../entities/job/api';
+import { I18nProvider } from '../../shared/i18n/I18nProvider';
 import { JobDetail } from './JobDetail';
 import type { JobDetail as JobDetailResponse } from '../../entities/job/model';
 
@@ -16,6 +17,7 @@ function buildJobResponse(id: string, url: string): JobDetailResponse {
     urlCount: 1,
     successCount: 1,
     errorCount: 0,
+    cancelledCount: 0,
     results: [
       {
         url,
@@ -86,7 +88,9 @@ describe('JobDetail stale-switch guarantee (SC-003)', () => {
 
     render(
       <Provider store={store}>
-        <Harness />
+        <I18nProvider>
+          <Harness />
+        </I18nProvider>
       </Provider>,
     );
 

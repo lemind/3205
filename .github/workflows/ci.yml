@@ -40,5 +40,4 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
-      # No frontend test script yet — Vitest + React Testing Library land later
-      # (see specs/001-url-status-checker/research.md); add `npm test` here then.
+      - run: npm test

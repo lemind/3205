@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useCreateJobMutation } from '../../entities/job/api';
 import { getApiErrorMessage } from '../../shared/lib/api-error';
+import { useTranslation } from '../../shared/i18n/context';
 
 export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => void }) {
   const [text, setText] = useState('');
   const [createJob, { isLoading, error }] = useCreateJobMutation();
+  const { t } = useTranslation();
 
   const urls = text
     .split('\n')
@@ -27,7 +29,7 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <label htmlFor="urls" className="text-base-content/70 font-mono text-sm">
-        URLs to check (one per line)
+        {t('urlsLabel')}
       </label>
       <textarea
         id="urls"
@@ -39,7 +41,7 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
       />
       {error && (
         <p className="text-error font-mono text-sm">
-          ! {getApiErrorMessage(error, 'Failed to create job.')}
+          ! {getApiErrorMessage(error, t('createJobError'))}
         </p>
       )}
       <button
@@ -47,7 +49,7 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
         className="btn btn-primary neon-text font-mono tracking-wider uppercase"
         disabled={urls.length === 0 || isLoading}
       >
-        {isLoading ? 'Running…' : 'Run Check'}
+        {isLoading ? t('running') : t('runCheck')}
       </button>
     </form>
   );

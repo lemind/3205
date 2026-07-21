@@ -89,13 +89,29 @@ export class JobsService {
   }
 
   private toSummary(job: Job): JobSummaryResponse {
+    // Single pass instead of three separate `.filter()`s — this runs on every
+    // listJobs()/getJob() call, which the frontend polls every 1.5s.
+    let successCount = 0;
+    let errorCount = 0;
+    let cancelledCount = 0;
+    for (const result of job.results) {
+      if (result.status === 'success') successCount++;
+      else if (result.status === 'error') errorCount++;
+      else if (result.status === 'cancelled') cancelledCount++;
+    }
+
     return {
       id: job.id,
       createdAt: job.createdAt,
       status: job.status,
       urlCount: job.results.length,
-      successCount: job.results.filter((r) => r.status === 'success').length,
-      errorCount: job.results.filter((r) => r.status === 'error').length,
+      successCount,
+      errorCount,
+      // Without this, a consumer can't tell "still in flight" apart from
+      // "cancelled" using the counts alone — successCount + errorCount can
+      // legitimately be less than urlCount in both cases (see JobList's
+      // pollingInterval logic, which relies on this to know when to stop).
+      cancelledCount,
     };
   }
 }

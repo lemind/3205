@@ -1,5 +1,7 @@
 # 3205
 
+[Русский](README.ru.md)
+
 Async URL status checker — submit a list of URLs, the backend checks each with an HTTP `HEAD` request in the background (bounded concurrency, artificial delay), and the frontend tracks progress and results per URL. See [spec.md](specs/001-url-status-checker/spec.md) for the full functional spec.
 
 ## Tech Stack
@@ -12,9 +14,20 @@ Full rationale for every major choice is in [docs/adr/](docs/adr/README.md).
 
 ## Test Coverage
 
-- **Backend**: Jest — unit tests for `JobsService`/`UrlCheckerService` (concurrency cap, status transitions, success/error classification) plus an e2e suite hitting a real running instance. Run with `npm test` / `npm run test:e2e` in `backend/`.
-- **Frontend**: none yet — no test runner installed. Vitest + React Testing Library are planned (see [research.md](specs/001-url-status-checker/research.md)) once there's UI complex enough to warrant it (polling/stale-state logic).
+- **Backend**: Jest — unit tests for `JobsService`/`UrlCheckerService`/DTO validation (concurrency cap, status transitions, success/error classification) plus an e2e suite (`backend/test/jobs.e2e-spec.ts`) that boots the real Nest app in-process and drives it over real HTTP via `supertest`, covering create → poll → cancel against a local test HTTP server (no external network dependency). Run with `npm test` / `npm run test:e2e` in `backend/`.
+- **Frontend**: Vitest + React Testing Library — an integration test asserting switching the active job mid-poll never renders stale data (SC-003), plus unit tests for the `isJobSettled` poll-stop predicate and the i18n `checkErrorMessage` translator.
 - **CI**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint + build + test for both apps on every push and PR into `main`.
+
+Coverage numbers (`npm run test:cov` in either app), from the unit suites only:
+
+| | Statements | Branch | Functions | Lines |
+|---|---|---|---|---|
+| Backend | 78.0% | 74.6% | 80.6% | 78.8% |
+| Frontend | 67.8% | 50.0% | 58.6% | 68.8% |
+
+Not 100% by design, not oversight — per [AGENTS.md](AGENTS.md)'s testing philosophy (meaningful confidence over exhaustive QA):
+- Backend's `jobs.controller.ts`/`app.module.ts`/`jobs.module.ts`/`main.ts` show 0% here because Jest's unit config (`backend/package.json`) and its e2e config (`backend/test/jest-e2e.json`) run and report separately — the controller's actual routes are exercised by the e2e suite, not double-counted here.
+- Frontend covers the logic worth testing directly (stale-switch regression, settlement predicate, error-message translation) rather than unit tests for every component — most of the untested code is presentational JSX with no branching logic worth a dedicated test.
 
 ## Conventions / Practices
 
