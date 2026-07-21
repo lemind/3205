@@ -2,6 +2,7 @@ import { jobsApi, useGetJobQuery } from '../../entities/job/api';
 import type { JobStatus, UrlCheckStatus } from '../../entities/job/model';
 import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
+import { CancelJobButton } from '../../features/cancel-job/CancelJobButton';
 
 const ACTIVE_POLL_INTERVAL_MS = 1500;
 
@@ -52,19 +53,22 @@ export function JobDetail({ jobId }: { jobId: string }) {
   const processed = data.results.filter((r) => TERMINAL_URL_STATUSES.includes(r.status)).length;
 
   return (
-    <div className="card bg-base-100 border border-base-300 shadow-md">
+    <div className="card bg-base-200 border-accent/40 neon-border neon-border-accent shadow-md">
       <div className="card-body gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="card-title font-mono text-base">{data.id}</h2>
+          <h2 className="card-title text-accent neon-text font-mono text-base">{data.id}</h2>
           <StatusBadge tone={TONE_BY_STATUS[data.status]}>{data.status}</StatusBadge>
         </div>
 
-        <p className="text-base-content/70 text-sm">
-          {processed} of {data.results.length} processed
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-base-content/70 font-mono text-sm">
+            &gt; {processed} of {data.results.length} processed
+          </p>
+          {!TERMINAL_JOB_STATUSES.includes(data.status) && <CancelJobButton jobId={jobId} />}
+        </div>
 
         <div className="overflow-x-auto">
-          <table className="table table-sm">
+          <table className="table table-sm font-mono">
             <thead>
               <tr>
                 <th>URL</th>

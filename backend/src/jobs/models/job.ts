@@ -11,13 +11,17 @@ export interface Job {
   cancelledAt: string | null;
 }
 
-/** Wire shape for GET /api/jobs/:id — urlCount/successCount/errorCount are derived, not stored (see data-model.md). */
-export interface JobDetailResponse {
+/** Wire shape for GET /api/jobs — urlCount/successCount/errorCount are derived, not stored (see data-model.md). */
+export interface JobSummaryResponse {
   id: string;
   createdAt: string;
   status: JobStatus;
   urlCount: number;
   successCount: number;
   errorCount: number;
+}
+
+/** Wire shape for GET /api/jobs/:id. */
+export interface JobDetailResponse extends JobSummaryResponse {
   results: UrlCheckResult[];
 }

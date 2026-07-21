@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { UrlCheckerService } from './url-checker.service';
+import type { Job } from './models/job';
 
 describe('JobsService', () => {
   let service: JobsService;
@@ -112,5 +113,62 @@ describe('JobsService', () => {
 
     const second = service.getJob(jobId);
     expect(second.results).toHaveLength(1);
+  });
+
+  it('listJobs returns correct urlCount/successCount/errorCount per job', () => {
+    urlCheckerService.processJob.mockImplementation((job: Job) => {
+      job.results[0].status = 'success';
+      if (job.results[1]) job.results[1].status = 'error';
+      job.status = 'completed';
+      return Promise.resolve();
+    });
+
+    const { jobId: firstId } = service.createJob({
+      urls: ['https://a.example.com', 'https://b.example.com'],
+    });
+    const { jobId: secondId } = service.createJob({
+      urls: ['https://c.example.com'],
+    });
+
+    const list = service.listJobs();
+    const first = list.find((j) => j.id === firstId);
+    const second = list.find((j) => j.id === secondId);
+
+    expect(first).toMatchObject({
+      urlCount: 2,
+      successCount: 1,
+      errorCount: 1,
+    });
+    expect(second).toMatchObject({
+      urlCount: 1,
+      successCount: 1,
+      errorCount: 0,
+    });
+  });
+
+  it('cancelJob marks a pending/in_progress job as cancelled', () => {
+    const { jobId } = service.createJob({ urls: ['https://example.com'] });
+
+    service.cancelJob(jobId);
+
+    expect(service.getJob(jobId).status).toBe('cancelled');
+  });
+
+  it('cancelJob is a no-op on an already-terminal job', () => {
+    urlCheckerService.processJob.mockImplementation((job: Job) => {
+      job.status = 'completed';
+      return Promise.resolve();
+    });
+    const { jobId } = service.createJob({ urls: ['https://example.com'] });
+
+    service.cancelJob(jobId);
+
+    expect(service.getJob(jobId).status).toBe('completed');
+  });
+
+  it('cancelJob throws NotFoundException for an unknown id', () => {
+    expect(() => service.cancelJob('does-not-exist')).toThrow(
+      NotFoundException,
+    );
   });
 });
