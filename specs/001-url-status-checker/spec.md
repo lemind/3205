@@ -30,7 +30,7 @@ As a user, I paste a list of URLs (one per line) into a form and start a check, 
 
 **Acceptance Scenarios**:
 
-1. **Given** the job form is empty, **When** the user enters one or more URLs (one per line) and clicks "Запустить проверку", **Then** a `POST /api/jobs` request is sent with `{ urls: [...] }`, a new job is created with a unique `jobId` and status `pending`, and that job becomes the active job in the UI.
+1. **Given** the job form is empty, **When** the user enters one or more URLs (one per line) and clicks "Run Check", **Then** a `POST /api/jobs` request is sent with `{ urls: [...] }`, a new job is created with a unique `jobId` and status `pending`, and that job becomes the active job in the UI.
 2. **Given** a job was just created, **When** the backend starts processing, **Then** processing happens asynchronously in the background — the `POST /api/jobs` response returns immediately with `{ jobId }` and does not wait for URL checks to finish.
 
 ---
@@ -60,7 +60,7 @@ As a user, I watch the active job's progress and see, per URL, whether it succee
 
 **Acceptance Scenarios**:
 
-1. **Given** an active job, **When** its detail view is open, **Then** the UI shows overall status and progress ("X из Y обработано").
+1. **Given** an active job, **When** its detail view is open, **Then** the UI shows overall status and progress ("X of Y processed").
 2. **Given** an active job with URLs in different states, **When** the detail view renders, **Then** each URL row shows its status (`pending`, `in_progress`, `success`, `error`, `cancelled`), HTTP status code (if any), and error message (if any).
 3. **Given** an active job is not yet in a terminal state, **When** time passes, **Then** the frontend polls `GET /api/jobs/:id` periodically and the view updates until the job reaches a terminal status (`completed`, `cancelled`, `failed`).
 
@@ -76,7 +76,7 @@ As a user, I stop a job I no longer want to wait on, so URLs that haven't starte
 
 **Acceptance Scenarios**:
 
-1. **Given** an active, non-terminal job, **When** the user clicks "Отменить задание", **Then** `DELETE /api/jobs/:id` is called, the job is marked `cancelled`, and URLs that had not yet started are marked `cancelled` and are not checked.
+1. **Given** an active, non-terminal job, **When** the user clicks "Cancel Job", **Then** `DELETE /api/jobs/:id` is called, the job is marked `cancelled`, and URLs that had not yet started are marked `cancelled` and are not checked.
 2. **Given** a job has URLs already `in_progress` at cancellation time, **When** cancellation is processed, **Then** those in-flight checks are allowed to finish (per spec: only *not-started* URLs are stopped).
 
 ---
@@ -117,12 +117,12 @@ As a user, when I switch to a different job or start a new one, I don't want to 
 - **FR-007**: System MUST apply an artificial random delay of 0–10 seconds before recording each URL's result.
 - **FR-008**: System MUST NOT run more than 5 concurrent `HEAD` requests within a single job.
 - **FR-009**: System MUST support multiple jobs being processed concurrently.
-- **FR-010**: Frontend MUST accept a newline-separated list of URLs via a textarea and submit them via FR-001 on "Запустить проверку".
+- **FR-010**: Frontend MUST accept a newline-separated list of URLs via a textarea and submit them via FR-001 on "Run Check".
 - **FR-011**: Frontend MUST display the job list (FR-003) and let the user select any job as the active job.
-- **FR-012**: Frontend MUST display the active job's overall progress ("X из Y обработано") and per-URL detail (FR-004).
+- **FR-012**: Frontend MUST display the active job's overall progress ("X of Y processed") and per-URL detail (FR-004).
 - **FR-013**: Frontend MUST poll `GET /api/jobs/:id` for the active job at a fixed interval while its status is non-terminal, and stop polling once a terminal status is reached.
 - **FR-014**: Frontend MUST stop polling the previous active job immediately when the active job changes (new job created or different job selected), and MUST discard/ignore any late-arriving response for a job that is no longer active.
-- **FR-015**: Frontend MUST provide a "Отменить задание" action on the active job that calls FR-005.
+- **FR-015**: Frontend MUST provide a "Cancel Job" action on the active job that calls FR-005.
 - **FR-016**: Both frontend and backend MUST be written in TypeScript.
 
 ### Key Entities

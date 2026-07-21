@@ -38,11 +38,11 @@ curl http://localhost:3000/api/health   # expect { "status": "ok" }
 
 ## Manual walkthrough (maps to spec.md acceptance scenarios)
 
-1. **Submit a job** (User Story 1). Open the app, paste 6+ URLs into the textarea (mix of valid ones like `https://example.com` and at least one that will fail, e.g. `https://this-domain-does-not-exist.invalid`), click "Запустить проверку".
+1. **Submit a job** (User Story 1). Open the app, paste 6+ URLs into the textarea (mix of valid ones like `https://example.com` and at least one that will fail, e.g. `https://this-domain-does-not-exist.invalid`), click "Run Check".
    - Expect: a job appears immediately as the active job, status `pending`/`in_progress`. `POST /api/jobs` (see [contracts/openapi.yaml](contracts/openapi.yaml)) should respond in well under a second — it must not block on the URL checks (FR-002).
 
 2. **Watch progress** (User Story 3). With 6 URLs submitted (more than the concurrency cap of 5):
-   - Expect: progress reads "X из Y обработано" and increments over time; at most 5 rows show `in_progress` simultaneously (FR-008) — check the Network tab or backend logs to confirm no more than 5 outstanding `HEAD` requests for this job at once.
+   - Expect: progress reads "X of Y processed" and increments over time; at most 5 rows show `in_progress` simultaneously (FR-008) — check the Network tab or backend logs to confirm no more than 5 outstanding `HEAD` requests for this job at once.
    - Expect: each row eventually shows `success` (2xx/3xx) or `error` (4xx/5xx/network failure) with an HTTP code and/or error message.
 
 3. **Browse jobs** (User Story 2). Submit a second job with different URLs.
@@ -51,7 +51,7 @@ curl http://localhost:3000/api/health   # expect { "status": "ok" }
 4. **Switch without stale updates** (User Story 5 — the sharpest correctness requirement). While job A (from step 1) is still `in_progress`, immediately switch the active job to job B (from step 3).
    - Expect: the detail view starts showing job B's data right away. Any poll response for job A that was already in flight at the moment of switching must not alter what's displayed — watch for a flicker back to job A's data as a failure signal. This is what [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md)'s RTK Query per-arg cache is specifically meant to prevent.
 
-5. **Cancel a job** (User Story 4). Submit a job with 10+ URLs, immediately click "Отменить задание" before it finishes.
+5. **Cancel a job** (User Story 4). Submit a job with 10+ URLs, immediately click "Cancel Job" before it finishes.
    - Expect: `DELETE /api/jobs/:id` returns success, the job's status becomes `cancelled`, and URLs that hadn't started yet show `cancelled` — but any URL that was already `in_progress` at the moment of cancellation still finishes into `success`/`error` (FR-005, per [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md)).
 
 ## Automated coverage
