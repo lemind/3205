@@ -31,7 +31,8 @@
 ## Git & Version Control
 
 - Commit atomically: one logical change per commit.
-- Keep commit messages short and descriptive. Example: `feat: add retry logic` — not `feat: add retry logic to syncQueue with exponential backoff and timeout`. If you need details, put them in the body.
+- Commit messages are a single line, no body. Example: `feat: add retry logic` — not `feat: add retry logic to syncQueue with exponential backoff and timeout`. Only add a body if the user explicitly asks for one.
+- Do not add AI/tool co-authorship trailers (e.g. `Co-Authored-By`) to commit messages.
 - Never force-push or rewrite history without explicit approval.
 - **NEVER push to `main` directly.** All work goes to feature branches. Pushing to `main` is strictly forbidden without explicit human approval.
 
@@ -88,6 +89,12 @@ After **any** change that affects behavior, scope, architecture, stack, file lay
 - **Chronological ordering in tasks.md**: Add new sub-phases to the **end** of the current phase, not in the middle. Sub-phase letters (`4a`, `4b`, `4c`, `4d`) must reflect actual completion order, not planned order. If you add work after other sub-phases were already completed, give it the next letter in sequence.
 
 **Trigger examples** (docs update required): new package/service added, API route added/renamed, env var moved server-side, phase completed, MVP scope narrowed or expanded.
+
+## Documentation & ADRs
+
+- No siloed docs: every doc (`spec.md`, `plan.md`, `tasks.md`, ADRs, README) must link to the other docs it relates to. A reader landing on any one of them should be able to reach the rest.
+- Architecturally significant decisions (framework choice, storage model, concurrency strategy, state-management approach, folder architecture, etc.) get an **ADR** under `docs/adr/`, one file per decision, Nygard style: Context, Decision, Consequences, Alternatives Considered. Number sequentially (`0001-...`, `0002-...`), keep an index in `docs/adr/README.md`.
+- Keep ADRs and `spec.md` separate by concern: user stories / functional requirements belong in `spec.md` (or `plan.md`/`tasks.md`); an ADR captures *why a decision was made*, not *what the user needs*. Cross-link between them instead of merging.
 
 ## Workflow
 
