@@ -121,7 +121,7 @@ components:
 
     JobSummary:
       type: object
-      required: [id, createdAt, status, urlCount, successCount, errorCount]
+      required: [id, createdAt, status, urlCount, successCount, errorCount, cancelledCount]
       properties:
         id:
           type: string
@@ -136,6 +136,8 @@ components:
         successCount:
           type: integer
         errorCount:
+          type: integer
+        cancelledCount:
           type: integer
 
     UrlCheckResult:

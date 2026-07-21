@@ -4,7 +4,6 @@ import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
 
 const ACTIVE_POLL_INTERVAL_MS = 1500;
-const TERMINAL_JOB_STATUSES: readonly JobStatus[] = ['completed', 'cancelled', 'failed'];
 
 const TONE_BY_STATUS: Record<JobStatus, BadgeTone> = {
   pending: 'neutral',
@@ -24,10 +23,15 @@ export function JobList({
   // Without this, a job that finishes in the background (the common case — no
   // create/cancel action to trigger a tag invalidation) would leave this list
   // showing stale 'in_progress' indefinitely. Same useQueryState-peek pattern as
-  // JobDetail: poll while any listed job is non-terminal, stop once none are.
+  // JobDetail. Deliberately keyed on the counts, not job.status: a cancelled
+  // job's status flips immediately, well before its in-flight/queued URLs
+  // actually settle — checking job.status alone would stop polling with stale
+  // success/error counts still short of urlCount.
   const cached = jobsApi.endpoints.listJobs.useQueryState();
   const allTerminal = cached.data
-    ? cached.data.every((job) => TERMINAL_JOB_STATUSES.includes(job.status))
+    ? cached.data.every(
+        (job) => job.successCount + job.errorCount + job.cancelledCount === job.urlCount,
+      )
     : false;
 
   const { data, isLoading, error } = useListJobsQuery(undefined, {
@@ -83,6 +87,7 @@ export function JobList({
               </td>
               <td className="text-xs">
                 {job.urlCount} total · {job.successCount} ok · {job.errorCount} err
+                {job.cancelledCount > 0 && ` · ${job.cancelledCount} cancelled`}
               </td>
             </tr>
           ))}

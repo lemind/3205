@@ -96,6 +96,12 @@ export class JobsService {
       urlCount: job.results.length,
       successCount: job.results.filter((r) => r.status === 'success').length,
       errorCount: job.results.filter((r) => r.status === 'error').length,
+      // Without this, a consumer can't tell "still in flight" apart from
+      // "cancelled" using the counts alone — successCount + errorCount can
+      // legitimately be less than urlCount in both cases (see JobList's
+      // pollingInterval logic, which relies on this to know when to stop).
+      cancelledCount: job.results.filter((r) => r.status === 'cancelled')
+        .length,
     };
   }
 }

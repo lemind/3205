@@ -16,6 +16,7 @@ function buildJobResponse(id: string, url: string): JobDetailResponse {
     urlCount: 1,
     successCount: 1,
     errorCount: 0,
+    cancelledCount: 0,
     results: [
       {
         url,

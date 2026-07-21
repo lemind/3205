@@ -19,6 +19,7 @@ export interface JobSummary {
   urlCount: number;
   successCount: number;
   errorCount: number;
+  cancelledCount: number;
 }
 
 export interface JobDetail extends JobSummary {

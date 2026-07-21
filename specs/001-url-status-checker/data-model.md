@@ -20,10 +20,11 @@ Derived (not stored, computed on read for `GET /api/jobs` and `GET /api/jobs/:id
 - `urlCount` = `results.length`
 - `successCount` = count of `results` with `status === 'success'`
 - `errorCount` = count of `results` with `status === 'error'`
+- `cancelledCount` = count of `results` with `status === 'cancelled'` — without this, a consumer can't distinguish "still in flight" from "cancelled" using the other three counts alone (both can leave `successCount + errorCount < urlCount`); `JobList`'s poll-until-settled logic depends on it.
 
 **Validation rules** (`POST /api/jobs` input, `CreateJobDto`):
 - `urls` MUST be a non-empty array.
-- Each entry MUST be a non-empty string (spec.md Assumptions: minimal validation — malformed URLs are allowed through and simply surface as `error` results from the failed `HEAD` check, not rejected at submission).
+- Each entry MUST be a non-empty string, AND a well-formed URL after normalization (see `url` field note below) — malformed entries (bad TLD/host, e.g. `https://dfgdfg;`) reject the *whole* request with 400 at submission, rather than being accepted and surfacing as an `error` result later (spec.md Assumptions).
 
 **State transitions**:
 

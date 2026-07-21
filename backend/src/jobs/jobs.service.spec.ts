@@ -115,16 +115,21 @@ describe('JobsService', () => {
     expect(second.results).toHaveLength(1);
   });
 
-  it('listJobs returns correct urlCount/successCount/errorCount per job', () => {
+  it('listJobs returns correct urlCount/successCount/errorCount/cancelledCount per job', () => {
     urlCheckerService.processJob.mockImplementation((job: Job) => {
       job.results[0].status = 'success';
       if (job.results[1]) job.results[1].status = 'error';
+      if (job.results[2]) job.results[2].status = 'cancelled';
       job.status = 'completed';
       return Promise.resolve();
     });
 
     const { jobId: firstId } = service.createJob({
-      urls: ['https://a.example.com', 'https://b.example.com'],
+      urls: [
+        'https://a.example.com',
+        'https://b.example.com',
+        'https://d.example.com',
+      ],
     });
     const { jobId: secondId } = service.createJob({
       urls: ['https://c.example.com'],
@@ -135,14 +140,16 @@ describe('JobsService', () => {
     const second = list.find((j) => j.id === secondId);
 
     expect(first).toMatchObject({
-      urlCount: 2,
+      urlCount: 3,
       successCount: 1,
       errorCount: 1,
+      cancelledCount: 1,
     });
     expect(second).toMatchObject({
       urlCount: 1,
       successCount: 1,
       errorCount: 0,
+      cancelledCount: 0,
     });
   });
 
