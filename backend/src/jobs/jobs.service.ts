@@ -1,6 +1,11 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { Job, JobDetailResponse } from './models/job';
+import {
+  Job,
+  JobDetailResponse,
+  JobStatus,
+  JobSummaryResponse,
+} from './models/job';
 import { UrlCheckResult } from './models/url-check-result';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UrlCheckerService } from './url-checker.service';
@@ -19,6 +24,12 @@ function normalizeUrl(url: string): string {
   }
   return `https://${url}`;
 }
+
+const TERMINAL_JOB_STATUSES: readonly JobStatus[] = [
+  'completed',
+  'cancelled',
+  'failed',
+];
 
 @Injectable()
 export class JobsService {
@@ -54,12 +65,44 @@ export class JobsService {
     return { jobId: job.id };
   }
 
+  listJobs(): JobSummaryResponse[] {
+    return Array.from(this.jobs.values()).map((job) => this.toSummary(job));
+  }
+
   getJob(id: string): JobDetailResponse {
+    const job = this.getJobOrThrow(id);
+
+    return {
+      ...this.toSummary(job),
+      // A copy, not the live internal array — the caller must never see it mutate
+      // out from under it if serialization is ever deferred past this call returning
+      // (e.g. an async interceptor added later), even though today's synchronous
+      // Express response cycle makes that a latent risk rather than a live one.
+      results: [...job.results],
+    };
+  }
+
+  cancelJob(id: string): void {
+    const job = this.getJobOrThrow(id);
+
+    if (TERMINAL_JOB_STATUSES.includes(job.status)) {
+      return; // no-op — already completed/cancelled/failed (FR-005, spec.md Edge Cases)
+    }
+
+    job.status = 'cancelled';
+    job.cancelledAt = new Date().toISOString();
+    this.logger.log(`Job ${id}: cancelled`);
+  }
+
+  private getJobOrThrow(id: string): Job {
     const job = this.jobs.get(id);
     if (!job) {
       throw new NotFoundException(`Job ${id} not found`);
     }
+    return job;
+  }
 
+  private toSummary(job: Job): JobSummaryResponse {
     return {
       id: job.id,
       createdAt: job.createdAt,
@@ -67,11 +110,6 @@ export class JobsService {
       urlCount: job.results.length,
       successCount: job.results.filter((r) => r.status === 'success').length,
       errorCount: job.results.filter((r) => r.status === 'error').length,
-      // A copy, not the live internal array — the caller must never see it mutate
-      // out from under it if serialization is ever deferred past this call returning
-      // (e.g. an async interceptor added later), even though today's synchronous
-      // Express response cycle makes that a latent risk rather than a live one.
-      results: [...job.results],
     };
   }
 }

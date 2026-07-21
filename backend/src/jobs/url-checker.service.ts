@@ -32,6 +32,15 @@ export class UrlCheckerService {
       await Promise.all(
         job.results.map((result) =>
           limit(() => {
+            // Checked right as this URL's limiter slot is acquired — i.e. right before
+            // it would start — per ADR-0004. JobsService.cancelJob runs concurrently
+            // (triggered by DELETE /api/jobs/:id while this Promise.all is still in
+            // flight) and mutates the same `job` object, which is why TypeScript can't
+            // narrow this away here the way it could before cancellation existed.
+            if (job.status === 'cancelled') {
+              result.status = 'cancelled';
+              return undefined;
+            }
             // p-limit always dispatches asynchronously (even the first task), so this
             // only flips once a URL actually starts — job.status stays 'pending' for
             // any caller inspecting it synchronously right after creation.
@@ -43,10 +52,13 @@ export class UrlCheckerService {
         ),
       );
 
-      // Cancellation doesn't exist yet (JobsService.cancelJob lands in Phase 7 / T045);
-      // the cancelled-aware terminal-status check from ADR-0004 belongs there, not here.
-      job.status = 'completed';
-      this.logger.log(`Job ${job.id}: completed`);
+      // A cancelled job stays cancelled — it must not be overwritten with 'completed'
+      // just because every result (including the ones skipped above) reached a
+      // terminal per-URL status (per ADR-0004's terminal-status rule).
+      if (job.status !== 'cancelled') {
+        job.status = 'completed';
+      }
+      this.logger.log(`Job ${job.id}: ${job.status}`);
     } catch (err) {
       job.status = 'failed';
       this.logger.error(

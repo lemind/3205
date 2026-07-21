@@ -1,6 +1,7 @@
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { CreateJobForm } from '../../features/create-job/CreateJobForm';
 import { JobDetail } from '../../widgets/job-detail/JobDetail';
+import { JobList } from '../../widgets/job-list/JobList';
 import { selectActiveJobId, setActiveJob } from './model';
 
 export function JobsPage() {
@@ -15,6 +16,13 @@ export function JobsPage() {
         <div className="card bg-base-100 border border-base-300 shadow-md">
           <div className="card-body">
             <CreateJobForm onCreated={(jobId) => dispatch(setActiveJob(jobId))} />
+          </div>
+        </div>
+
+        <div className="card bg-base-100 border border-base-300 shadow-md">
+          <div className="card-body">
+            <h2 className="card-title text-base">Jobs</h2>
+            <JobList activeJobId={activeJobId} onSelect={(jobId) => dispatch(setActiveJob(jobId))} />
           </div>
         </div>
 

@@ -110,4 +110,36 @@ describe('UrlCheckerService', () => {
     await expect(service.processJob(job)).resolves.toBeUndefined();
     expect(job.status).toBe('failed');
   });
+
+  it('cancels not-yet-started URLs but lets in-flight ones finish (ADR-0004)', async () => {
+    let released!: () => void;
+    const held = new Promise<void>((resolve) => {
+      released = resolve;
+    });
+
+    let dispatchCount = 0;
+    fetchMock.mockImplementation(async () => {
+      dispatchCount++;
+      await held; // every dispatched HEAD request stays in flight until released
+      return new Response(null, { status: 200 });
+    });
+
+    const job = buildJob(7); // 5 (the concurrency cap) will be in flight, 2 left queued
+    const processing = service.processJob(job);
+
+    // Let the first batch (exactly the concurrency cap) actually dispatch.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(dispatchCount).toBe(5);
+
+    // Simulates JobsService.cancelJob running concurrently via DELETE /api/jobs/:id.
+    job.status = 'cancelled';
+
+    released(); // let the 5 in-flight requests resolve
+    await processing;
+
+    expect(dispatchCount).toBe(5); // the 2 queued URLs never actually dispatched
+    expect(job.results.filter((r) => r.status === 'success')).toHaveLength(5);
+    expect(job.results.filter((r) => r.status === 'cancelled')).toHaveLength(2);
+    expect(job.status).toBe('cancelled'); // not overwritten back to 'completed'
+  });
 });

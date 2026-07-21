@@ -2,6 +2,7 @@ import { jobsApi, useGetJobQuery } from '../../entities/job/api';
 import type { JobStatus, UrlCheckStatus } from '../../entities/job/model';
 import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
+import { CancelJobButton } from '../../features/cancel-job/CancelJobButton';
 
 const ACTIVE_POLL_INTERVAL_MS = 1500;
 
@@ -59,9 +60,12 @@ export function JobDetail({ jobId }: { jobId: string }) {
           <StatusBadge tone={TONE_BY_STATUS[data.status]}>{data.status}</StatusBadge>
         </div>
 
-        <p className="text-base-content/70 text-sm">
-          {processed} of {data.results.length} processed
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-base-content/70 text-sm">
+            {processed} of {data.results.length} processed
+          </p>
+          {!TERMINAL_JOB_STATUSES.includes(data.status) && <CancelJobButton jobId={jobId} />}
+        </div>
 
         <div className="overflow-x-auto">
           <table className="table table-sm">

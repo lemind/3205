@@ -121,15 +121,15 @@
 
 ### Tests
 
-- [ ] T036 [P] [US2] Unit test: `JobsService.listJobs` returns correct `urlCount`/`successCount`/`errorCount` per job, in `backend/src/jobs/jobs.service.spec.ts`
+- [x] T036 [P] [US2] Unit test: `JobsService.listJobs` returns correct `urlCount`/`successCount`/`errorCount` per job, in `backend/src/jobs/jobs.service.spec.ts`
 
 ### Implementation
 
-- [ ] T037 [US2] Implement `JobsController.listJobs` (`GET /api/jobs`) in `backend/src/jobs/jobs.controller.ts`
-- [ ] T038 [US2] Implement `JobsService.listJobs` (map the store to `JobSummary[]`) in `backend/src/jobs/jobs.service.ts` (depends: T013)
-- [ ] T039 [US2] Implement `jobsApi.listJobs` query in `frontend/src/entities/job/api.ts` (depends: T015)
-- [ ] T040 [US2] Implement `JobList` widget (id/date/status/stats, click-to-select) in `frontend/src/widgets/job-list/`
-- [ ] T041 [US2] Wire `JobList` into `frontend/src/pages/jobs/`; selecting an entry dispatches `setActiveJob` (depends: T033, T040)
+- [x] T037 [US2] Implement `JobsController.listJobs` (`GET /api/jobs`) in `backend/src/jobs/jobs.controller.ts`
+- [x] T038 [US2] Implement `JobsService.listJobs` (map the store to `JobSummary[]`) in `backend/src/jobs/jobs.service.ts` (depends: T013) — extracted a shared `toSummary`/`getJobOrThrow` helper reused by `getJob` too, to avoid duplicating the derived-count logic
+- [x] T039 [US2] Implement `jobsApi.listJobs` query in `frontend/src/entities/job/api.ts` (depends: T015) — added RTK Query tags (`Job`/`LIST`) so the list auto-refreshes when a job is created, rather than requiring a manual reload
+- [x] T040 [US2] Implement `JobList` widget (id/date/status/stats, click-to-select) in `frontend/src/widgets/job-list/`
+- [x] T041 [US2] Wire `JobList` into `frontend/src/pages/jobs/`; selecting an entry dispatches `setActiveJob` (depends: T033, T040) — verified live: creating jobs auto-populates the list (tag invalidation), clicking an older row correctly switches the active job
 
 **Checkpoint**: Full job history browsing works alongside US1/US3/US5.
 
@@ -143,15 +143,15 @@
 
 ### Tests
 
-- [ ] T042 [P] [US4] Unit test: cancelling marks unstarted URLs `cancelled`, leaves in-flight URLs to finish, and is a no-op on an already-terminal job, in `backend/src/jobs/jobs.service.spec.ts` and `backend/src/jobs/url-checker.service.spec.ts`
+- [x] T042 [P] [US4] Unit test: cancelling marks unstarted URLs `cancelled`, leaves in-flight URLs to finish, and is a no-op on an already-terminal job, in `backend/src/jobs/jobs.service.spec.ts` and `backend/src/jobs/url-checker.service.spec.ts` — the `url-checker.service.spec.ts` test holds 5 (the concurrency cap) requests open, confirms the other 2 never dispatch, then releases the 5 and confirms they finish `success` while the 2 come back `cancelled` and the job stays `cancelled` (not overwritten to `completed`)
 
 ### Implementation
 
-- [ ] T043 [US4] Implement `JobsController.cancelJob` (`DELETE /api/jobs/:id`, `@HttpCode(204)` — Nest's `@Delete()` defaults to 200, but the contract promises 204 No Content — 404 on missing) in `backend/src/jobs/jobs.controller.ts`
-- [ ] T044 [US4] Implement `JobsService.cancelJob` (set `status: cancelled` + `cancelledAt`; no-op if already terminal) in `backend/src/jobs/jobs.service.ts` (depends: T028)
-- [ ] T045 [US4] Add the pre-dispatch cancellation check in `UrlCheckerService` per [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md) in `backend/src/jobs/url-checker.service.ts` (depends: T022, T044)
-- [ ] T046 [US4] Implement `jobsApi.cancelJob` mutation in `frontend/src/entities/job/api.ts` (depends: T015)
-- [ ] T047 [US4] Implement `CancelJobButton` feature, wired into `JobDetail` (depends: T030), in `frontend/src/features/cancel-job/`
+- [x] T043 [US4] Implement `JobsController.cancelJob` (`DELETE /api/jobs/:id`, `@HttpCode(204)` — Nest's `@Delete()` defaults to 200, but the contract promises 204 No Content — 404 on missing) in `backend/src/jobs/jobs.controller.ts` — verified live: 204 + empty body on both first-cancel and no-op-on-terminal, 404 on unknown id
+- [x] T044 [US4] Implement `JobsService.cancelJob` (set `status: cancelled` + `cancelledAt`; no-op if already terminal) in `backend/src/jobs/jobs.service.ts` (depends: T028)
+- [x] T045 [US4] Add the pre-dispatch cancellation check in `UrlCheckerService` per [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md) in `backend/src/jobs/url-checker.service.ts` (depends: T022, T044) — this also reinstated the cancelled-aware terminal-status guard (`job.status !== 'cancelled'` before setting `completed`) that Phase 3 deliberately left out because nothing could set `cancelled` yet; TypeScript no longer flags it as dead code now that `cancelJob` is a real, separate code path it can't statically rule out. Verified live with a real 10-URL job cancelled immediately: the 5 in-flight URLs ran to completion, the 5 unstarted ones came back `cancelled`, job stayed `cancelled` throughout.
+- [x] T046 [US4] Implement `jobsApi.cancelJob` mutation in `frontend/src/entities/job/api.ts` (depends: T015) — invalidates both the specific job's tag and the list tag, so cancelling reflects immediately in both `JobDetail` and `JobList` rather than waiting for the next poll
+- [x] T047 [US4] Implement `CancelJobButton` feature, wired into `JobDetail` (depends: T030), in `frontend/src/features/cancel-job/` — `JobDetail` hides the button once the job reaches a terminal status
 
 **Checkpoint**: All 5 user stories are independently functional.
 
