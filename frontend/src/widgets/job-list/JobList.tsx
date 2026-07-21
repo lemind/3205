@@ -53,7 +53,7 @@ export function JobList({
 
   return (
     <div className="overflow-x-auto">
-      <table className="table table-sm font-mono">
+      <table className="table table-sm font-mono whitespace-nowrap">
         <thead>
           <tr>
             <th>{t('colCreated')}</th>

@@ -7,7 +7,7 @@ export function LanguageSwitcher() {
     <div className="join font-mono text-xs">
       <button
         type="button"
-        className={`btn btn-xs join-item ${lang === 'ru' ? 'btn-active' : 'btn-ghost'}`}
+        className={`btn btn-xs join-item ${lang === 'ru' ? 'btn-active text-accent neon-text' : 'btn-ghost'}`}
         onClick={() => setLang('ru')}
         aria-pressed={lang === 'ru'}
       >
@@ -15,7 +15,7 @@ export function LanguageSwitcher() {
       </button>
       <button
         type="button"
-        className={`btn btn-xs join-item ${lang === 'en' ? 'btn-active' : 'btn-ghost'}`}
+        className={`btn btn-xs join-item ${lang === 'en' ? 'btn-active text-accent neon-text' : 'btn-ghost'}`}
         onClick={() => setLang('en')}
         aria-pressed={lang === 'en'}
       >

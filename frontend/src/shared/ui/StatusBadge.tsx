@@ -12,7 +12,9 @@ const TONE_CLASS: Record<BadgeTone, string> = {
 
 export function StatusBadge({ tone, children }: { tone: BadgeTone; children: ReactNode }) {
   return (
-    <span className={`badge badge-sm badge-outline neon-text font-mono ${TONE_CLASS[tone]}`}>
+    <span
+      className={`badge badge-sm badge-outline neon-text font-mono ${TONE_CLASS[tone]} min-w-24 justify-center whitespace-nowrap`}
+    >
       [ {children} ]
     </span>
   );

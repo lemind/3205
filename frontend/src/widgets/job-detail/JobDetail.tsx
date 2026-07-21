@@ -71,7 +71,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="table table-sm font-mono">
+          <table className="table table-sm font-mono whitespace-nowrap">
             <thead>
               <tr>
                 <th>{t('colUrl')}</th>
