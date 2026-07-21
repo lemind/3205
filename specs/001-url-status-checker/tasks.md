@@ -82,15 +82,15 @@
 
 ### Tests
 
-- [ ] T026 [P] [US3] Unit test: `JobsService.getJob` returns per-URL detail and throws `NotFoundException` for an unknown id, in `backend/src/jobs/jobs.service.spec.ts`
+- [x] T026 [P] [US3] Unit test: `JobsService.getJob` returns per-URL detail and throws `NotFoundException` for an unknown id, in `backend/src/jobs/jobs.service.spec.ts`
 
 ### Implementation
 
-- [ ] T027 [US3] Implement `JobsController.getJob` (`GET /api/jobs/:id`, 404 on missing) in `backend/src/jobs/jobs.controller.ts`
-- [ ] T028 [US3] Implement `JobsService.getJob` in `backend/src/jobs/jobs.service.ts` (depends: T021)
-- [ ] T029 [US3] Implement `jobsApi.getJob` query (keyed by `jobId`) in `frontend/src/entities/job/api.ts` per [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md) (depends: T023) — note: `pollingInterval` is a hook-call option, not an endpoint-definition option; it's set where the query is used (T031), not here
-- [ ] T030 [US3] Implement `JobDetail` widget — "X of Y processed" progress + per-URL table (status/httpStatus/errorMessage) — in `frontend/src/widgets/job-detail/`
-- [ ] T031 [US3] Wire `JobDetail` into `frontend/src/pages/jobs/` via `useGetJobQuery(activeJobId, { skip: !activeJobId, pollingInterval })`, computing `pollingInterval` from the job's current status (non-zero while non-terminal, `0` once terminal) at the call site (depends: T025, T029)
+- [x] T027 [US3] Implement `JobsController.getJob` (`GET /api/jobs/:id`, 404 on missing) in `backend/src/jobs/jobs.controller.ts` — `import type` needed for the `JobDetailResponse` return-type import (`isolatedModules` + `emitDecoratorMetadata` requirement on decorated methods)
+- [x] T028 [US3] Implement `JobsService.getJob` in `backend/src/jobs/jobs.service.ts` (depends: T021) — throws Nest's built-in `NotFoundException`, no custom controller handling needed
+- [x] T029 [US3] Implement `jobsApi.getJob` query (keyed by `jobId`) in `frontend/src/entities/job/api.ts` per [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md) (depends: T023) — note: `pollingInterval` is a hook-call option, not an endpoint-definition option; it's set where the query is used (T031), not here. Also fixed a real bug this task exposed: `baseUrl: '/api'` (relative) crashes `fetchBaseQuery` under Node's native `fetch`/`Request` (used by Vitest and technically also SSR-style contexts) since undici has no browser "page origin" to resolve a relative URL against — changed to `${window.location.origin}/api`, same resolved origin in the browser (no behavior change there), fixes Node-based test/tooling contexts.
+- [x] T030 [US3] Implement `JobDetail` widget — "X of Y processed" progress + per-URL table (status/httpStatus/errorMessage) — in `frontend/src/widgets/job-detail/`
+- [x] T031 [US3] Wire `JobDetail` into `frontend/src/pages/jobs/` via `useGetJobQuery(activeJobId, { skip: !activeJobId, pollingInterval })`, computing `pollingInterval` from the job's current status (non-zero while non-terminal, `0` once terminal) at the call site (depends: T025, T029) — the naive state+effect approach for computing `pollingInterval` from the query's own prior result violates `eslint-plugin-react-hooks`'s `set-state-in-effect` and `refs` rules (both state-in-effect and ref-in-render were rejected); used RTK Query's `useQueryState` instead — a pure cache selector safe to read during render, with zero extra fetches (empirically verified: exactly 1 `fetch` call, not 2). Parent renders `<JobDetail key={activeJobId} .../>` so a job switch fully remounts and resets naturally. Verified live end-to-end (real HEAD checks, real polling, screenshots) — progress went from 0/2 in_progress to 2/2 completed with correct classification, zero console errors.
 
 **Checkpoint**: US1 + US3 together are a demoable, correct single-job submit-and-watch flow.
 
@@ -104,13 +104,10 @@
 
 ### Tests
 
-- [ ] T032 [P] [US5] Integration test: switching the active job mid-poll never renders the previous job's data (mock two jobs, delay one response, assert final UI matches only the current active job — the automatable form of SC-003), in `frontend/test/job-detail.stale-switch.test.tsx`
-
-### Implementation
-
-- [ ] T033 [US5] Formalize the active-job selection into an `activeJobId` slice (`setActiveJob` action) in `frontend/src/pages/jobs/model.ts` — page-level UI state, deliberately **not** in `entities/job/` per FSD layering (domain data vs. UI selection state) in [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md)
-- [ ] T034 [US5] Ensure `CreateJobForm` (T025) dispatches `setActiveJob` on a new job, and confirm via T032 that the previous job's `useGetJobQuery` subscription is torn down when the active job changes (depends: T031, T033)
-- [ ] T035 [US5] Manual verification: run [quickstart.md](quickstart.md) step 4 and confirm no stale-data flicker
+- [x] T032 [P] [US5] Integration test: switching the active job mid-poll never renders the previous job's data (mock two jobs, delay one response, assert final UI matches only the current active job — the automatable form of SC-003), in `frontend/src/widgets/job-detail/JobDetail.stale-switch.test.tsx` — colocated with the component instead of a top-level `frontend/test/` dir (Vitest has no `rootDir` restriction unlike the backend's Jest config, so colocating is consistent with the backend precedent and standard frontend practice); required installing Vitest + React Testing Library + jsdom from scratch (nothing existed before this task) — see `vite.config.ts`'s `test` block and `src/test/setup.ts`. Test genuinely holds job A's response open, switches to job B, then resolves A late — passes: A's data never appears.
+- [x] T033 [US5] Formalize the active-job selection into an `activeJobId` slice (`setActiveJob` action) in `frontend/src/pages/jobs/model.ts` — page-level UI state, deliberately **not** in `entities/job/` per FSD layering (domain data vs. UI selection state) in [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md). Added typed `useAppDispatch`/`useAppSelector` in `frontend/src/app/hooks.ts` alongside it.
+- [x] T034 [US5] Ensure `CreateJobForm` (T025) dispatches `setActiveJob` on a new job, and confirm via T032 that the previous job's `useGetJobQuery` subscription is torn down when the active job changes (depends: T031, T033) — dispatch happens in `JobsPage`'s `onCreated` callback passed to `CreateJobForm`, keeping the feature component itself Redux-agnostic
+- [x] T035 [US5] Manual verification: run [quickstart.md](quickstart.md) step 4 and confirm no stale-data flicker — done live in a real browser (not just the jsdom test): submitted a slow 3-URL job A, switched to a fast 1-URL job B mid-flight, polled the displayed job id for 8s while A kept resolving in the background — A's id never reappeared, zero console errors
 
 **Checkpoint**: The P1 slice (US1, US3, US5) is complete — this is the brief's sharpest correctness requirement, verified before any P2 work starts.
 

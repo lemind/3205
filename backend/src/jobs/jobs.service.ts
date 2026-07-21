@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { Job } from './models/job';
+import { Job, JobDetailResponse } from './models/job';
 import { UrlCheckResult } from './models/url-check-result';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UrlCheckerService } from './url-checker.service';
@@ -37,5 +37,22 @@ export class JobsService {
     void this.urlCheckerService.processJob(job);
 
     return { jobId: job.id };
+  }
+
+  getJob(id: string): JobDetailResponse {
+    const job = this.jobs.get(id);
+    if (!job) {
+      throw new NotFoundException(`Job ${id} not found`);
+    }
+
+    return {
+      id: job.id,
+      createdAt: job.createdAt,
+      status: job.status,
+      urlCount: job.results.length,
+      successCount: job.results.filter((r) => r.status === 'success').length,
+      errorCount: job.results.filter((r) => r.status === 'error').length,
+      results: job.results,
+    };
   }
 }

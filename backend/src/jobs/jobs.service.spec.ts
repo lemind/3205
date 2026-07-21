@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { UrlCheckerService } from './url-checker.service';
 
@@ -49,5 +50,27 @@ describe('JobsService', () => {
     const result = service.createJob({ urls: ['https://example.com'] });
 
     expect(result.jobId).toEqual(expect.any(String));
+  });
+
+  it('getJob returns per-URL detail with derived counts for an existing job', () => {
+    const { jobId } = service.createJob({
+      urls: ['https://a.example.com', 'https://b.example.com'],
+    });
+
+    const detail = service.getJob(jobId);
+
+    expect(detail.id).toBe(jobId);
+    expect(detail.urlCount).toBe(2);
+    expect(detail.successCount).toBe(0);
+    expect(detail.errorCount).toBe(0);
+    expect(detail.results).toHaveLength(2);
+    expect(detail.results[0]).toMatchObject({
+      url: 'https://a.example.com',
+      status: 'pending',
+    });
+  });
+
+  it('getJob throws NotFoundException for an unknown id', () => {
+    expect(() => service.getJob('does-not-exist')).toThrow(NotFoundException);
   });
 });
