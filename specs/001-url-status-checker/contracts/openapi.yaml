@@ -1,0 +1,183 @@
+openapi: 3.0.3
+info:
+  title: Async URL Status Checker API
+  version: "1.0.0"
+  description: >
+    REST API for submitting a list of URLs to be checked asynchronously via HTTP HEAD,
+    and for tracking/cancelling that work. See ../spec.md for functional requirements
+    and ../data-model.md for the underlying entity/state model.
+servers:
+  - url: /api
+
+paths:
+  /jobs:
+    post:
+      operationId: createJob
+      summary: Create a new URL-checking job (FR-001, FR-002)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJobRequest'
+      responses:
+        '201':
+          description: Job created, processing started in the background
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateJobResponse'
+        '400':
+          description: Invalid request (e.g. empty `urls` array)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      operationId: listJobs
+      summary: List jobs with summary info (FR-003)
+      responses:
+        '200':
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobSummary'
+
+  /jobs/{id}:
+    get:
+      operationId: getJob
+      summary: Get full detail for a job, including per-URL results (FR-004)
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Job detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetail'
+        '404':
+          description: No job with this id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      operationId: cancelJob
+      summary: Cancel a job — stops not-yet-started URLs (FR-005)
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '204':
+          description: Job marked cancelled (or already in a terminal state — no-op)
+        '404':
+          description: No job with this id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    JobId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateJobRequest:
+      type: object
+      required: [urls]
+      properties:
+        urls:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            minLength: 1
+          example: ["https://example.com", "https://example.org"]
+
+    CreateJobResponse:
+      type: object
+      required: [jobId]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+
+    JobStatus:
+      type: string
+      enum: [pending, in_progress, completed, cancelled, failed]
+
+    UrlCheckStatus:
+      type: string
+      enum: [pending, in_progress, success, error, cancelled]
+
+    JobSummary:
+      type: object
+      required: [id, createdAt, status, urlCount, successCount, errorCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        urlCount:
+          type: integer
+        successCount:
+          type: integer
+        errorCount:
+          type: integer
+
+    UrlCheckResult:
+      type: object
+      required: [url, status, httpStatus, errorMessage, startedAt, finishedAt, durationMs]
+      properties:
+        url:
+          type: string
+        status:
+          $ref: '#/components/schemas/UrlCheckStatus'
+        httpStatus:
+          type: integer
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        durationMs:
+          type: integer
+          nullable: true
+
+    JobDetail:
+      allOf:
+        - $ref: '#/components/schemas/JobSummary'
+        - type: object
+          required: [results]
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/UrlCheckResult'
+
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string

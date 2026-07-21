@@ -1,0 +1,217 @@
+# Tasks: Async URL Status Checker
+
+**Input**: Design documents from `specs/001-url-status-checker/`
+**Prerequisites**: [plan.md](plan.md), [spec.md](spec.md), [research.md](research.md), [data-model.md](data-model.md), [contracts/openapi.yaml](contracts/openapi.yaml), [quickstart.md](quickstart.md)
+
+**Tests**: Included. AGENTS.md requires matching test type to the change, and SC-003 (no stale poll data on job switch) is exactly the kind of requirement that regresses silently without a test — see [quickstart.md](quickstart.md) "Automated coverage".
+
+**Organization**: Tasks are grouped by user story from [spec.md](spec.md), in priority order (P1 stories first: US1, US3, US5; then P2: US2, US4), so the P1 slice is a demoable, correct MVP before P2 stories are added. Setup ends with a deliberately runnable health-check milestone (T008/T009) so there's something to look at in a browser before any job logic exists.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies on incomplete tasks)
+- **[Story]**: Maps the task to a user story from spec.md (US1–US5)
+- File paths follow the structure fixed in [plan.md](plan.md#project-structure)
+
+---
+
+## Phase 1: Setup
+
+**Purpose**: Project scaffolding for both apps, matching [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md) — ending with a minimal, runnable health check so the wiring is provably correct before any domain logic exists.
+
+- [x] T001 Scaffold NestJS project at `backend/` (Nest CLI or manual), TypeScript strict mode — `nest new --strict --skip-git`; note the CLI's `--skip-git` also suppressed `.gitignore` generation, added manually (see T003 note)
+- [x] T002 [P] Scaffold Vite + React + TypeScript project at `frontend/`, with the FSD folders from [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md): `src/app`, `src/pages`, `src/widgets`, `src/features`, `src/entities`, `src/shared`
+- [x] T003 [P] Add `backend/Dockerfile` and `frontend/Dockerfile` (multi-stage: Vite build → nginx) and root `docker-compose.yml` per [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md) — backend:3000, frontend nginx:80 mapped to host 8080; also added `backend/.gitignore` (missing after `--skip-git`, would have staged `node_modules`)
+- [x] T004 [P] Add `frontend/nginx.conf` proxying `/api/*` to the `backend` service on the compose network — verified path is preserved (no double-prefixing) since Nest's global prefix is also `api`
+- [x] T005 [P] Configure ESLint + Prettier in `backend/` — already provided by the Nest CLI scaffold; verified `npm run lint` is clean
+- [x] T006 [P] Configure ESLint + Prettier in `frontend/` — replaced the Vite template's default `oxlint` with ESLint (flat config) + Prettier, matching backend's `.prettierrc`; verified `npm run lint` is clean
+- [x] T007 [P] Configure Vite dev server proxy (`server.proxy['/api']` → backend) in `frontend/vite.config.ts` per [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md)
+- [x] T008 [P] Implement `GET /api/health` returning `{ status: 'ok' }` via a minimal `AppController` (no dependency on `JobsModule`) in `backend/src/app.controller.ts` (depends: T001) — added `app.setGlobalPrefix('api')` in `main.ts`; updated the generated unit + e2e tests to match; all pass
+- [x] T009 [P] Implement a minimal status page that `fetch`es `/api/health` on load and renders "Backend: ok" / "Backend: unreachable" — no Redux dependency yet, just proves the proxy/nginx wiring — in `frontend/src/App.tsx` (depends: T002, T007) — verified live via `npm run dev` + `curl localhost:5173/api/health` through the proxy (200, `{"status":"ok"}`). Addendum: styled with Tailwind CSS + daisyUI ([ADR-0007](../../docs/adr/0007-frontend-styling-tailwind-daisyui.md)), added after Phase 1 was first completed; verified the compiled `dist/*.css` actually contains the daisyUI classes used.
+
+**Checkpoint**: `docker-compose up --build` (or the two `npm run dev`s) boots both apps and the frontend visibly confirms it can reach the backend via `/api/health` — see [quickstart.md](quickstart.md) "Step 0". This is the first "run it and see it" milestone, before any job logic exists.
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Shared types, module skeletons, and store setup that every user story builds on. **No user story work starts before this phase is done.**
+
+- [ ] T010 [P] Define `Job`, `JobStatus` types in `backend/src/jobs/models/job.ts` per [data-model.md](data-model.md#job)
+- [ ] T011 [P] Define `UrlCheckResult`, `UrlCheckStatus` types in `backend/src/jobs/models/url-check-result.ts` per [data-model.md](data-model.md#urlcheckresult)
+- [ ] T012 Create `JobsModule` with empty `JobsController`/`JobsService`/`UrlCheckerService` in `backend/src/jobs/jobs.module.ts` per [ADR-0002](../../docs/adr/0002-backend-framework-nestjs.md) (depends: T010, T011)
+- [ ] T013 Implement the in-memory `Map<string, Job>` store as a field on `JobsService` (singleton provider) in `backend/src/jobs/jobs.service.ts` per [ADR-0003](../../docs/adr/0003-in-memory-job-storage.md) (depends: T012)
+- [ ] T014 [P] Define `Job`/`UrlCheckResult`/status-enum types matching [contracts/openapi.yaml](contracts/openapi.yaml) in `frontend/src/entities/job/model.ts`
+- [ ] T015 Set up the Redux store and an empty `jobsApi` (`createApi`, `reducerPath: 'jobsApi'`) in `frontend/src/app/store.ts` and `frontend/src/entities/job/api.ts` per [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md)
+- [ ] T016 [P] Build `StatusBadge` and `Spinner` primitives in `frontend/src/shared/ui/`
+
+**Checkpoint**: Foundation ready — user story implementation can begin.
+
+---
+
+## Phase 3: User Story 1 - Submit a list of URLs for checking (Priority: P1) 🎯 MVP
+
+**Goal**: `POST /api/jobs` creates a job and starts background processing; the frontend form submits and makes the new job active.
+
+**Independent Test**: Submit 2–3 URLs via the form (or `curl -X POST /api/jobs`); confirm a `jobId` comes back immediately and the job exists with status `pending`/`in_progress`.
+
+### Tests
+
+- [ ] T017 [P] [US1] Unit test: `JobsService.createJob` assigns a unique `jobId`, sets status `pending`, and returns without waiting for URL checks, in `backend/test/jobs.service.spec.ts`
+- [ ] T018 [P] [US1] Unit test: `UrlCheckerService` never runs more than 5 concurrent `HEAD` checks for one job (mocked `fetch`), in `backend/test/url-checker.service.spec.ts`
+
+### Implementation
+
+- [ ] T019 [US1] Implement `CreateJobDto` (`urls: string[]`, non-empty entries) with `class-validator` in `backend/src/jobs/dto/create-job.dto.ts`
+- [ ] T020 [US1] Implement `JobsController.createJob` (`POST /api/jobs`, `ValidationPipe`) in `backend/src/jobs/jobs.controller.ts` (depends: T019)
+- [ ] T021 [US1] Implement `JobsService.createJob` — build the `Job` + `UrlCheckResult[]`, store it, fire-and-forget `UrlCheckerService.processJob` — in `backend/src/jobs/jobs.service.ts` (depends: T013)
+- [ ] T022 [US1] Implement `UrlCheckerService.processJob` — per-job `p-limit(5)`, `fetch` HEAD, 0–10s delay, success/error classification per [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md) — in `backend/src/jobs/url-checker.service.ts`
+- [ ] T023 [US1] Implement `jobsApi.createJob` mutation in `frontend/src/entities/job/api.ts` (depends: T015)
+- [ ] T024 [US1] Implement the URL-list textarea form (`CreateJobForm`) in `frontend/src/features/create-job/`
+- [ ] T025 [US1] Wire `CreateJobForm` into `frontend/src/pages/jobs/`, setting the returned `jobId` as the active job on submit
+
+**Checkpoint**: Submitting a job works end-to-end and starts real background processing (verify via backend logs until US3 gives visibility).
+
+---
+
+## Phase 4: User Story 3 - Track progress and results of the active job (Priority: P1)
+
+**Goal**: `GET /api/jobs/:id` exposes per-URL detail; the frontend polls and renders it.
+
+**Independent Test**: With a job from US1 in flight, confirm `GET /api/jobs/:id` shows progress and per-URL status, and the UI updates without a manual reload.
+
+### Tests
+
+- [ ] T026 [P] [US3] Unit test: `JobsService.getJob` returns per-URL detail and throws `NotFoundException` for an unknown id, in `backend/test/jobs.service.spec.ts`
+
+### Implementation
+
+- [ ] T027 [US3] Implement `JobsController.getJob` (`GET /api/jobs/:id`, 404 on missing) in `backend/src/jobs/jobs.controller.ts`
+- [ ] T028 [US3] Implement `JobsService.getJob` in `backend/src/jobs/jobs.service.ts` (depends: T021)
+- [ ] T029 [US3] Implement `jobsApi.getJob` query (keyed by `jobId`) in `frontend/src/entities/job/api.ts` per [ADR-0005](../../docs/adr/0005-frontend-state-and-data-layer.md) (depends: T023) — note: `pollingInterval` is a hook-call option, not an endpoint-definition option; it's set where the query is used (T031), not here
+- [ ] T030 [US3] Implement `JobDetail` widget — "X из Y обработано" progress + per-URL table (status/httpStatus/errorMessage) — in `frontend/src/widgets/job-detail/`
+- [ ] T031 [US3] Wire `JobDetail` into `frontend/src/pages/jobs/` via `useGetJobQuery(activeJobId, { skip: !activeJobId, pollingInterval })`, computing `pollingInterval` from the job's current status (non-zero while non-terminal, `0` once terminal) at the call site (depends: T025, T029)
+
+**Checkpoint**: US1 + US3 together are a demoable, correct single-job submit-and-watch flow.
+
+---
+
+## Phase 5: User Story 5 - Switch active job without stale updates (Priority: P1)
+
+**Goal**: Switching the active job never lets a late response for the old job reach the screen (FR-014, SC-003).
+
+**Independent Test**: Create job A, then immediately create job B (which becomes active per US1); confirm the UI reflects only B and never flickers back to A's data.
+
+### Tests
+
+- [ ] T032 [P] [US5] Integration test: switching the active job mid-poll never renders the previous job's data (mock two jobs, delay one response, assert final UI matches only the current active job — the automatable form of SC-003), in `frontend/test/job-detail.stale-switch.test.tsx`
+
+### Implementation
+
+- [ ] T033 [US5] Formalize the active-job selection into an `activeJobId` slice (`setActiveJob` action) in `frontend/src/pages/jobs/model.ts` — page-level UI state, deliberately **not** in `entities/job/` per FSD layering (domain data vs. UI selection state) in [ADR-0006](../../docs/adr/0006-frontend-architecture-fsd.md)
+- [ ] T034 [US5] Ensure `CreateJobForm` (T025) dispatches `setActiveJob` on a new job, and confirm via T032 that the previous job's `useGetJobQuery` subscription is torn down when the active job changes (depends: T031, T033)
+- [ ] T035 [US5] Manual verification: run [quickstart.md](quickstart.md) step 4 and confirm no stale-data flicker
+
+**Checkpoint**: The P1 slice (US1, US3, US5) is complete — this is the brief's sharpest correctness requirement, verified before any P2 work starts.
+
+---
+
+## Phase 6: User Story 2 - Browse past and current jobs (Priority: P2)
+
+**Goal**: `GET /api/jobs` lists jobs; the frontend shows the list and lets the user pick one as active.
+
+**Independent Test**: Create two jobs, confirm both appear in the list with correct summary info, and clicking either makes it active.
+
+### Tests
+
+- [ ] T036 [P] [US2] Unit test: `JobsService.listJobs` returns correct `urlCount`/`successCount`/`errorCount` per job, in `backend/test/jobs.service.spec.ts`
+
+### Implementation
+
+- [ ] T037 [US2] Implement `JobsController.listJobs` (`GET /api/jobs`) in `backend/src/jobs/jobs.controller.ts`
+- [ ] T038 [US2] Implement `JobsService.listJobs` (map the store to `JobSummary[]`) in `backend/src/jobs/jobs.service.ts` (depends: T013)
+- [ ] T039 [US2] Implement `jobsApi.listJobs` query in `frontend/src/entities/job/api.ts` (depends: T015)
+- [ ] T040 [US2] Implement `JobList` widget (id/date/status/stats, click-to-select) in `frontend/src/widgets/job-list/`
+- [ ] T041 [US2] Wire `JobList` into `frontend/src/pages/jobs/`; selecting an entry dispatches `setActiveJob` (depends: T033, T040)
+
+**Checkpoint**: Full job history browsing works alongside US1/US3/US5.
+
+---
+
+## Phase 7: User Story 4 - Cancel a running job (Priority: P2)
+
+**Goal**: `DELETE /api/jobs/:id` stops not-yet-started URLs without touching in-flight ones.
+
+**Independent Test**: Cancel a job with several `pending` URLs; confirm those become `cancelled` and no new `HEAD` requests are issued for them, while any `in_progress` URL still finishes.
+
+### Tests
+
+- [ ] T042 [P] [US4] Unit test: cancelling marks unstarted URLs `cancelled`, leaves in-flight URLs to finish, and is a no-op on an already-terminal job, in `backend/test/jobs.service.spec.ts` and `backend/test/url-checker.service.spec.ts`
+
+### Implementation
+
+- [ ] T043 [US4] Implement `JobsController.cancelJob` (`DELETE /api/jobs/:id`, `@HttpCode(204)` — Nest's `@Delete()` defaults to 200, but the contract promises 204 No Content — 404 on missing) in `backend/src/jobs/jobs.controller.ts`
+- [ ] T044 [US4] Implement `JobsService.cancelJob` (set `status: cancelled` + `cancelledAt`; no-op if already terminal) in `backend/src/jobs/jobs.service.ts` (depends: T028)
+- [ ] T045 [US4] Add the pre-dispatch cancellation check in `UrlCheckerService` per [ADR-0004](../../docs/adr/0004-url-check-concurrency-and-cancellation.md) in `backend/src/jobs/url-checker.service.ts` (depends: T022, T044)
+- [ ] T046 [US4] Implement `jobsApi.cancelJob` mutation in `frontend/src/entities/job/api.ts` (depends: T015)
+- [ ] T047 [US4] Implement `CancelJobButton` feature, wired into `JobDetail` (depends: T030), in `frontend/src/features/cancel-job/`
+
+**Checkpoint**: All 5 user stories are independently functional.
+
+---
+
+## Phase 8: Polish & Cross-Cutting Concerns
+
+- [ ] T048 [P] Write root `README.md` run instructions (Docker + local dev), matching [quickstart.md](quickstart.md)
+- [ ] T049 [P] Add a backend e2e test (`backend/test/jobs.e2e-spec.ts`, Nest + `supertest`) covering create → poll → cancel via real HTTP calls against the app
+- [ ] T050 Run the full [quickstart.md](quickstart.md) manual walkthrough end-to-end; fix any discrepancies found
+- [ ] T051 [P] Add a global exception filter in `backend/src/main.ts` and surface RTK Query `error`/`isLoading` states in the frontend widgets
+- [ ] T052 Final `docker-compose up --build` smoke test from a clean checkout (verifies SC-005)
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies.
+- **Foundational (Phase 2)**: Depends on Setup — blocks all user stories.
+- **User Stories (Phases 3–7)**: All depend on Foundational. Ordered P1 → P1 → P1 → P2 → P2 (US1, US3, US5, US2, US4) so the MVP (the P1 slice) is complete and correct before P2 work starts. US5 depends on US1 (job creation) and US3 (polling) existing; US2 and US4 are otherwise independent of each other and of US5.
+- **Polish (Phase 8)**: Depends on all desired user stories being complete.
+
+### Parallel Opportunities
+
+- All `[P]`-marked Setup tasks (T002–T009) run in parallel, modulo T008 needing T001 done and T009 needing T002/T007 done.
+- Foundational `[P]` tasks (T010, T011, T014, T016) run in parallel; T012/T013/T015 have internal ordering (module before store, store before service logic).
+- Within each user story, test tasks marked `[P]` can run in parallel with each other (but should be written and seen failing before their paired implementation tasks).
+- Once Foundational is done, US1/US3/US5 must land in order (each depends on the previous story's endpoints/wiring) — this feature does not have the "fully parallel stories" shape the template assumes, because US3 needs US1's create endpoint and US5 needs both. US2 and US4 can be built in parallel with each other after the P1 slice is done, by different people, since neither depends on the other.
+
+---
+
+## Implementation Strategy
+
+### MVP First (P1 slice)
+
+1. Phase 1: Setup — ends with a runnable health check (T008/T009), the first thing to actually look at.
+2. Phase 2: Foundational
+3. Phase 3: US1 (Submit)
+4. Phase 4: US3 (Track progress)
+5. Phase 5: US5 (Switch without stale updates)
+6. **STOP and VALIDATE**: run [quickstart.md](quickstart.md) steps 1, 2, and 4 — this is the brief's core loop plus its sharpest correctness requirement.
+
+### Incremental Delivery
+
+1. Setup + Foundational → foundation ready, health check visible.
+2. US1 → US3 → US5 → MVP demoable and correct (quickstart steps 1, 2, 4 pass).
+3. US2 → job history browsing (quickstart step 3).
+4. US4 → cancellation (quickstart step 5).
+5. Polish → README, e2e coverage, final Docker smoke test.
+
+---
+
+## Notes
+
+- `[P]` tasks touch different files and have no incomplete dependency.
+- `[Story]` labels trace every task back to [spec.md](spec.md)'s user stories.
+- Commit after each task or logical group, per [AGENTS.md](../../AGENTS.md) (atomic commits, one-line messages, no AI co-authorship trailer).
+- Stop at each phase checkpoint and validate against the relevant [quickstart.md](quickstart.md) step before moving on.

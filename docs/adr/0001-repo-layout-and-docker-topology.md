@@ -21,7 +21,7 @@ The brief requires a single public GitHub repo link, with TypeScript backend and
 
 ## Consequences
 
-- One `git clone` + `docker-compose up` gets a reviewer a working stack end-to-end — satisfies SC-005 and the "инструкция в README" delivery requirement.
+- One `git clone` + `docker compose up` gets a reviewer a working stack end-to-end — satisfies SC-005 and the "инструкция в README" delivery requirement.
 - Same-origin `/api` path in both dev and Docker means no CORS configuration is needed anywhere.
 - Two independent `package.json`s means duplicated tooling config (TS, lint) across folders; acceptable at this scale.
 

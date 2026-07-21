@@ -4,9 +4,11 @@
 
 **Created**: 2026-07-21
 
-**Status**: Draft
+**Status**: Reviewed — see [quality checklist](checklists/requirements.md)
 
 **Source**: [Фулстек 3205 ТЗ.md](../../Фулстек%203205%20ТЗ.md) (test task brief, not tracked in git — see `.gitignore`)
+
+**Plan**: [plan.md](plan.md) | **Tasks**: [tasks.md](tasks.md)
 
 **Related ADRs**: [docs/adr/](../../docs/adr/README.md) — see especially
 [0001](../../docs/adr/0001-repo-layout-and-docker-topology.md),
@@ -97,7 +99,7 @@ As a user, when I switch to a different job or start a new one, I don't want to 
 - Empty or whitespace-only textarea submitted → no job created, user sees a validation message (no such job form validation endpoint exists — client-side only).
 - Duplicate URLs in the same submission → each is checked independently as its own entry (brief doesn't call for de-duplication).
 - A URL that is unreachable/times out → recorded as `error` with an error message, not left `pending` forever.
-- Cancelling a job that has already reached a terminal state → no-op or explicit error (see FR-011).
+- Cancelling a job that has already reached a terminal state → no-op (FR-005; see [data-model.md](data-model.md) Job state transitions).
 - More than 5 URLs in a job → only 5 checked concurrently at a time (see FR-008); the rest wait their turn.
 - Two jobs running at once → each job's concurrency is capped independently at 5; jobs don't share or contend for that limit (see FR-009).
 - Backend process restarts mid-job → all job/result data is lost (in-memory only, see [ADR-0003](../../docs/adr/0003-in-memory-job-storage.md)); out of scope to recover.
@@ -136,7 +138,7 @@ As a user, when I switch to a different job or start a new one, I don't want to 
 - **SC-002**: A job with N URLs (N > 5) never has more than 5 `HEAD` requests in flight for that job at any instant.
 - **SC-003**: Switching the active job while a previous job is still polling never causes the UI to display data belonging to the previous job (zero stale-state renders, verified by manual and/or automated test).
 - **SC-004**: Cancelling a job with unstarted URLs results in zero new `HEAD` requests being issued for those URLs after the cancellation is processed.
-- **SC-005**: The full stack (`backend` + `frontend`) starts from a clean checkout with `docker-compose up` and is usable end-to-end, per [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md).
+- **SC-005**: A reviewer can get the full stack running end-to-end from a clean checkout with a single documented command, with no manual configuration steps (deployment mechanism documented in [ADR-0001](../../docs/adr/0001-repo-layout-and-docker-topology.md)).
 
 ## Assumptions
 
