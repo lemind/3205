@@ -165,6 +165,7 @@
 - [ ] T051 [P] Add a global exception filter in `backend/src/main.ts` and surface RTK Query `error`/`isLoading` states in the frontend widgets
 - [ ] T052 Final `docker-compose up --build` smoke test from a clean checkout (verifies SC-005)
 - [ ] T053 [P] Add `README.ru.md` — Russian translation of the finished root `README.md` (do this last, once T048's content is final, so it's translating the finished doc rather than something that'll drift), with a language-switch link at the top of both files
+- [ ] T054 [P] Add EN/RU UI language support to the frontend, RU default, with a switcher — library choice is an architectural decision per AGENTS.md, needs a new ADR before implementation; extract existing UI strings into translation files
 
 ---
 
