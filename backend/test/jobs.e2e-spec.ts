@@ -1,11 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { AppModule } from '../src/app.module';
-import { AllExceptionsFilter } from '../src/all-exceptions.filter';
+import { createTestApp } from './create-test-app';
 import type { JobDetailResponse } from '../src/jobs/models/job';
 
 const TERMINAL_STATUSES = ['completed', 'cancelled', 'failed'];
@@ -57,18 +55,7 @@ describe('Jobs (e2e)', () => {
 
   beforeEach(async () => {
     pendingResponses = [];
-
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe());
-    // Matches main.ts's real bootstrap — otherwise these tests verify a
-    // config that isn't the one actually serving production requests.
-    app.useGlobalFilters(new AllExceptionsFilter());
-    await app.init();
+    app = await createTestApp();
 
     // Mocked only after the module is fully compiled and routes are registered —
     // Nest's own module-token generation also uses Math.random() internally, so

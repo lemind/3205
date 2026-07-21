@@ -1,25 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
-import { AllExceptionsFilter } from './../src/all-exceptions.filter';
+import { createTestApp } from './create-test-app';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api');
-    // Matches main.ts's real bootstrap — otherwise this app diverges from
-    // production and an e2e assertion could pass against a filter that isn't
-    // actually the one serving real requests.
-    app.useGlobalFilters(new AllExceptionsFilter());
-    await app.init();
+    app = await createTestApp();
   });
 
   it('/api/health (GET)', () => {

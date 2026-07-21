@@ -96,7 +96,8 @@ export class UrlCheckerService {
       // is just "fetch failed" regardless of cause, so passing it through verbatim
       // isn't more informative than a clear fixed message, and it's not something
       // the frontend can meaningfully translate. Kept deliberately generic so the
-      // frontend's i18n can map these known shapes (see api-error-message.ts).
+      // frontend's i18n can map these known shapes (see checkErrorMessage in
+      // frontend/src/shared/i18n/translations.ts — these two must stay in sync).
       errorMessage =
         err instanceof Error && err.name === 'AbortError'
           ? `Request timed out after ${HEAD_REQUEST_TIMEOUT_MS}ms`
