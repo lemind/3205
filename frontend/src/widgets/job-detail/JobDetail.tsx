@@ -4,6 +4,7 @@ import type { JobStatus, UrlCheckStatus } from '../../entities/job/model';
 import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
 import { CancelJobButton } from '../../features/cancel-job/CancelJobButton';
+import { useTranslation } from '../../shared/i18n/context';
 
 const ACTIVE_POLL_INTERVAL_MS = 1500;
 
@@ -27,6 +28,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
   // eslint-plugin-react-hooks for exactly this "value from own hook" pattern).
   const cached = jobsApi.endpoints.getJob.useQueryState(jobId);
   const isTerminal = cached.data ? isJobSettled(cached.data) : false;
+  const { t, statusLabel, progressText } = useTranslation();
 
   const { data, isLoading, error } = useGetJobQuery(jobId, {
     pollingInterval: isTerminal ? 0 : ACTIVE_POLL_INTERVAL_MS,
@@ -44,7 +46,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
   // error shouldn't wipe an already-rendered job (RTK Query keeps the last good
   // `data` around even when a later poll fails).
   if (error && !data) {
-    return <p className="text-error text-sm">Failed to load job.</p>;
+    return <p className="text-error text-sm">{t('loadJobError')}</p>;
   }
 
   if (!data) {
@@ -58,12 +60,12 @@ export function JobDetail({ jobId }: { jobId: string }) {
       <div className="card-body gap-4">
         <div className="flex items-center justify-between">
           <h2 className="card-title text-accent neon-text font-mono text-base">{data.id}</h2>
-          <StatusBadge tone={TONE_BY_STATUS[data.status]}>{data.status}</StatusBadge>
+          <StatusBadge tone={TONE_BY_STATUS[data.status]}>{statusLabel(data.status)}</StatusBadge>
         </div>
 
         <div className="flex items-center justify-between">
           <p className="text-base-content/70 font-mono text-sm">
-            &gt; {processed} of {data.results.length} processed
+            &gt; {progressText(processed, data.results.length)}
           </p>
           {!TERMINAL_JOB_STATUSES.includes(data.status) && <CancelJobButton jobId={jobId} />}
         </div>
@@ -72,10 +74,10 @@ export function JobDetail({ jobId }: { jobId: string }) {
           <table className="table table-sm font-mono">
             <thead>
               <tr>
-                <th>URL</th>
-                <th>Status</th>
-                <th>HTTP</th>
-                <th>Error</th>
+                <th>{t('colUrl')}</th>
+                <th>{t('colStatus')}</th>
+                <th>{t('colHttp')}</th>
+                <th>{t('colError')}</th>
               </tr>
             </thead>
             <tbody>
@@ -83,7 +85,9 @@ export function JobDetail({ jobId }: { jobId: string }) {
                 <tr key={`${result.url}-${index}`}>
                   <td className="max-w-xs truncate">{result.url}</td>
                   <td>
-                    <StatusBadge tone={TONE_BY_STATUS[result.status]}>{result.status}</StatusBadge>
+                    <StatusBadge tone={TONE_BY_STATUS[result.status]}>
+                      {statusLabel(result.status)}
+                    </StatusBadge>
                   </td>
                   <td>{result.httpStatus ?? '—'}</td>
                   <td className="max-w-xs truncate">{result.errorMessage ?? '—'}</td>

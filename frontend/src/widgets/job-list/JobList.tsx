@@ -3,6 +3,7 @@ import { isJobSettled } from '../../entities/job/lib';
 import type { JobStatus } from '../../entities/job/model';
 import { StatusBadge, type BadgeTone } from '../../shared/ui/StatusBadge';
 import { Spinner } from '../../shared/ui/Spinner';
+import { useTranslation } from '../../shared/i18n/context';
 
 const ACTIVE_POLL_INTERVAL_MS = 1500;
 
@@ -28,6 +29,7 @@ export function JobList({
   // this isn't just a job.status check.
   const cached = jobsApi.endpoints.listJobs.useQueryState();
   const allTerminal = cached.data ? cached.data.every(isJobSettled) : false;
+  const { t, statusLabel, countsText } = useTranslation();
 
   const { data, isLoading, error } = useListJobsQuery(undefined, {
     pollingInterval: allTerminal ? 0 : ACTIVE_POLL_INTERVAL_MS,
@@ -42,11 +44,11 @@ export function JobList({
   }
 
   if (error) {
-    return <p className="text-error font-mono text-sm">! Failed to load jobs.</p>;
+    return <p className="text-error font-mono text-sm">! {t('loadJobsError')}</p>;
   }
 
   if (!data || data.length === 0) {
-    return <p className="text-base-content/60 font-mono text-sm">// no jobs yet</p>;
+    return <p className="text-base-content/60 font-mono text-sm">{t('noJobsYet')}</p>;
   }
 
   return (
@@ -54,9 +56,9 @@ export function JobList({
       <table className="table table-sm font-mono">
         <thead>
           <tr>
-            <th>Created</th>
-            <th>Status</th>
-            <th>URLs</th>
+            <th>{t('colCreated')}</th>
+            <th>{t('colStatus')}</th>
+            <th>{t('colUrls')}</th>
           </tr>
         </thead>
         <tbody>
@@ -78,11 +80,10 @@ export function JobList({
             >
               <td className="font-mono text-xs">{new Date(job.createdAt).toLocaleString()}</td>
               <td>
-                <StatusBadge tone={TONE_BY_STATUS[job.status]}>{job.status}</StatusBadge>
+                <StatusBadge tone={TONE_BY_STATUS[job.status]}>{statusLabel(job.status)}</StatusBadge>
               </td>
               <td className="text-xs">
-                {job.urlCount} total · {job.successCount} ok · {job.errorCount} err
-                {job.cancelledCount > 0 && ` · ${job.cancelledCount} cancelled`}
+                {countsText(job.urlCount, job.successCount, job.errorCount, job.cancelledCount)}
               </td>
             </tr>
           ))}
