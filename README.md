@@ -1,5 +1,33 @@
 # 3205
-test task
+
+Async URL status checker — submit a list of URLs, the backend checks each with an HTTP `HEAD` request in the background (bounded concurrency, artificial delay), and the frontend tracks progress and results per URL. See [spec.md](specs/001-url-status-checker/spec.md) for the full functional spec.
+
+## Tech Stack
+
+**Backend** — NestJS 11, TypeScript (`strict: true`), `class-validator`/`class-transformer` for DTO validation, `p-limit` for per-job concurrency capping, Node's built-in `fetch` for the HTTP `HEAD` checks. In-memory storage only, no database ([ADR-0003](docs/adr/0003-in-memory-job-storage.md)).
+
+**Frontend** — React 19 + TypeScript, Redux Toolkit + RTK Query, Vite, Tailwind CSS + daisyUI. Feature-Sliced Design layout ([ADR-0006](docs/adr/0006-frontend-architecture-fsd.md)).
+
+Full rationale for every major choice is in [docs/adr/](docs/adr/README.md).
+
+## Test Coverage
+
+- **Backend**: Jest — unit tests for `JobsService`/`UrlCheckerService` (concurrency cap, status transitions, success/error classification) plus an e2e suite hitting a real running instance. Run with `npm test` / `npm run test:e2e` in `backend/`.
+- **Frontend**: none yet — no test runner installed. Vitest + React Testing Library are planned (see [research.md](specs/001-url-status-checker/research.md)) once there's UI complex enough to warrant it (polling/stale-state logic).
+- **CI**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint + build + test for both apps on every push and PR into `main`.
+
+## Conventions / Practices
+
+- **Spec-driven**: every feature has a spec, plan, and task breakdown under `specs/` (via [spec-kit](.specify/)) before code is written.
+- **Decisions recorded, not just made**: architecturally significant choices are ADRs in `docs/adr/`, not tribal knowledge.
+- **Reproducible installs**: `package-lock.json` is committed and CI/Docker use `npm ci`, so installs are byte-identical everywhere — see the versions note below.
+- **Lint + format enforced**: ESLint + Prettier on both sides, run in CI.
+- **TypeScript strict mode** on the backend; DTOs validated at the API boundary, never trusted un-validated.
+- See [AGENTS.md](AGENTS.md) for the full set of engineering conventions this repo follows.
+
+## Versions
+
+`package.json` uses semver ranges, but `package-lock.json` pins exact versions, and both Dockerfiles and CI install via `npm ci` — so every environment (local, CI, Docker) resolves to the identical dependency tree. Docker base images (`node:22-alpine`, `nginx:1.27-alpine`) are pinned to major.minor, not exact patch, so rebuilds still pick up OS-level security patches.
 
 ## Setup
 
