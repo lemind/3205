@@ -26,16 +26,20 @@ export function CreateJobForm({ onCreated }: { onCreated: (jobId: string) => voi
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <textarea
-        className="textarea textarea-bordered w-full"
+        className="textarea textarea-bordered border-secondary/50 focus:border-secondary bg-base-100 w-full font-mono"
         rows={6}
         placeholder={'https://example.com\nhttps://example.org'}
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
-      <button type="submit" className="btn btn-primary" disabled={urls.length === 0 || isLoading}>
+      <button
+        type="submit"
+        className="btn btn-primary neon-text font-mono tracking-wider uppercase"
+        disabled={urls.length === 0 || isLoading}
+      >
         {isLoading ? 'Running…' : 'Run Check'}
       </button>
-      {error && <p className="text-error text-sm">Failed to create job.</p>}
+      {error && <p className="text-error font-mono text-sm">! Failed to create job.</p>}
     </form>
   );
 }

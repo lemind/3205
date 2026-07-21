@@ -29,16 +29,16 @@ export function JobList({
   }
 
   if (error) {
-    return <p className="text-error text-sm">Failed to load jobs.</p>;
+    return <p className="text-error font-mono text-sm">! Failed to load jobs.</p>;
   }
 
   if (!data || data.length === 0) {
-    return <p className="text-base-content/60 text-sm">No jobs yet.</p>;
+    return <p className="text-base-content/60 font-mono text-sm">// no jobs yet</p>;
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="table table-sm">
+      <table className="table table-sm font-mono">
         <thead>
           <tr>
             <th>Created</th>
@@ -50,7 +50,9 @@ export function JobList({
           {data.map((job) => (
             <tr
               key={job.id}
-              className={`hover:bg-base-200 cursor-pointer ${job.id === activeJobId ? 'bg-base-200' : ''}`}
+              className={`hover:bg-secondary/10 cursor-pointer ${
+                job.id === activeJobId ? 'bg-secondary/15 border-secondary border-l-2' : ''
+              }`}
               onClick={() => onSelect(job.id)}
             >
               <td className="font-mono text-xs">{new Date(job.createdAt).toLocaleString()}</td>
