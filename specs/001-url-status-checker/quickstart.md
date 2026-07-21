@@ -7,7 +7,7 @@ This describes the target dev/run workflow and a manual walkthrough that exercis
 ## Run everything (Docker)
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 - Frontend: http://localhost:8080 (nginx, port 80 inside the container) — **not** `:5173`, that's only the Vite dev server port used in local dev below.

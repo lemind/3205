@@ -12,7 +12,7 @@ cd backend && npm install
 cd ../frontend && npm install
 ```
 
-(Docker path doesn't need this — `docker-compose up --build` installs deps inside the containers.)
+(Docker path doesn't need this — `docker compose up --build` installs deps inside the containers.)
 
 ## Run
 
@@ -29,7 +29,7 @@ cd frontend && npm run dev        # http://localhost:5173
 ### Docker
 
 ```bash
-docker-compose up --build
+docker compose up --build
 # frontend: http://localhost:8080
 # backend:  http://localhost:3000/api/health
 ```
