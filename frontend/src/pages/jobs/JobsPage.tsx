@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { CreateJobForm } from '../../features/create-job/CreateJobForm';
+import { JobDetail } from '../../widgets/job-detail/JobDetail';
+import { selectActiveJobId, setActiveJob } from './model';
 
 export function JobsPage() {
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const activeJobId = useAppSelector(selectActiveJobId);
+  const dispatch = useAppDispatch();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200 p-6">
@@ -11,15 +14,11 @@ export function JobsPage() {
 
         <div className="card bg-base-100 border border-base-300 shadow-md">
           <div className="card-body">
-            <CreateJobForm onCreated={setActiveJobId} />
+            <CreateJobForm onCreated={(jobId) => dispatch(setActiveJob(jobId))} />
           </div>
         </div>
 
-        {activeJobId && (
-          <p className="text-base-content/60 text-sm">
-            Active job: <span className="font-mono">{activeJobId}</span> — progress view lands in Phase 4.
-          </p>
-        )}
+        {activeJobId && <JobDetail key={activeJobId} jobId={activeJobId} />}
       </div>
     </main>
   );
