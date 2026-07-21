@@ -12,8 +12,8 @@ Full rationale for every major choice is in [docs/adr/](docs/adr/README.md).
 
 ## Test Coverage
 
-- **Backend**: Jest — unit tests for `JobsService`/`UrlCheckerService` (concurrency cap, status transitions, success/error classification) plus an e2e suite hitting a real running instance. Run with `npm test` / `npm run test:e2e` in `backend/`.
-- **Frontend**: none yet — no test runner installed. Vitest + React Testing Library are planned (see [research.md](specs/001-url-status-checker/research.md)) once there's UI complex enough to warrant it (polling/stale-state logic).
+- **Backend**: Jest — unit tests for `JobsService`/`UrlCheckerService`/DTO validation (concurrency cap, status transitions, success/error classification) plus an e2e suite (`backend/test/jobs.e2e-spec.ts`) that boots the real Nest app in-process and drives it over real HTTP via `supertest`, covering create → poll → cancel against a local test HTTP server (no external network dependency). Run with `npm test` / `npm run test:e2e` in `backend/`.
+- **Frontend**: Vitest + React Testing Library — an integration test asserting switching the active job mid-poll never renders stale data (SC-003).
 - **CI**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs lint + build + test for both apps on every push and PR into `main`.
 
 ## Conventions / Practices

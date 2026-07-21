@@ -159,8 +159,8 @@
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T048 [P] Write root `README.md` run instructions (Docker + local dev), matching [quickstart.md](quickstart.md)
-- [ ] T049 [P] Add a backend e2e test (`backend/test/jobs.e2e-spec.ts`, Nest + `supertest`) covering create → poll → cancel via real HTTP calls against the app
+- [x] T048 [P] Write root `README.md` run instructions (Docker + local dev), matching [quickstart.md](quickstart.md) — already done in an earlier ad-hoc pass (Setup/Run sections match quickstart.md exactly); this pass corrected a stale Test Coverage claim ("e2e hitting a real running instance") to accurately describe the in-process `supertest` approach T049 actually uses, and updated the frontend testing line (Vitest existed since Phase 5 but the README hadn't been updated to say so)
+- [x] T049 [P] Add a backend e2e test (`backend/test/jobs.e2e-spec.ts`, Nest + `supertest`) covering create → poll → cancel via real HTTP calls against the app — 5 tests: full create-to-completion with a real per-URL success/error split, malformed-URL rejection (400, no job created), cancellation (concurrency-cap-aware: waits for exactly 5 in-flight before cancelling, confirms the other 2 stay unstarted), idempotent cancel-on-terminal, 404 on unknown id. Uses a local `http` test server (no external network dependency) with a `/hold` route tests can park responses on to deterministically control in-flight-vs-queued state, instead of timing guesses. Found and worked around a real gotcha: mocking `Math.random` *before* `Test.createTestingModule(...).compile()` silently breaks Nest's route registration (its own module-token generation uses `Math.random()` internally) — the mock must be applied after `app.init()`.
 - [ ] T050 Run the full [quickstart.md](quickstart.md) manual walkthrough end-to-end; fix any discrepancies found
 - [ ] T051 [P] Add a global exception filter in `backend/src/main.ts` and surface RTK Query `error`/`isLoading` states in the frontend widgets
 - [ ] T052 Final `docker-compose up --build` smoke test from a clean checkout (verifies SC-005)
